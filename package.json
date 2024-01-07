@@ -1,0 +1,26 @@
+{
+  "name": "binance",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.coffee",
+  "scripts": {
+    "test": "node -r coffeescript/register -r esm test/data.coffee"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/twhtanghk/binance.git"
+  },
+  "author": "twhtanghk@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/twhtanghk/binance/issues"
+  },
+  "homepage": "https://github.com/twhtanghk/binance#readme",
+  "dependencies": {
+    "algotrader": "github:twhtanghk/algotrader",
+    "binance": "^2.8.15",
+    "coffeescript": "^2.7.0",
+    "esm": "^3.2.25",
+    "moment": "^2.30.1"
+  }
+}
