@@ -1,3 +1,4 @@
+moment = require 'moment'
 Binance = require('../index').default
 
 debug = (obj) ->
@@ -7,6 +8,10 @@ do ->
   try 
     broker = await new Binance()
 
-    debug await broker.historyKL()
+    {g, destroy} = await broker.data
+      beginTime: moment().subtract day: 1
+      freq: '1'
+    for await i from g()
+      console.log i
   catch err
     console.error err

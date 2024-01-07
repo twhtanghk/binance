@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/twhtanghk/binance#readme",
   "dependencies": {
+    "@async-generators/from-emitter": "^0.3.0",
     "algotrader": "github:twhtanghk/algotrader",
     "binance": "^2.8.15",
     "coffeescript": "^2.7.0",
