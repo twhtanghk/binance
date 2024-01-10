@@ -8,8 +8,8 @@ do ->
   try 
     broker = await new Binance()
 
-    {g, destroy} = await broker.data
-      beginTime: moment().subtract day: 1
+    {g, destroy} = await broker.dataKL
+      start: moment().subtract day: 1
       freq: '1'
     for await i from g()
       console.log i

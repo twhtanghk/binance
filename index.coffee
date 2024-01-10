@@ -4,9 +4,9 @@ import fromEmitter from '@async-generators/from-emitter'
 import {EventEmitter} from 'events'
 import {readFile} from 'fs/promises'
 import {MainClient, WebsocketClient} from 'binance'
-{freqDuration} = require('algotrader/data').default
+{Broker, freqDuration} = require('algotrader/data').default
 
-class Binance extends EventEmitter
+class Binance extends Broker
   @api_key: process.env.BINANCE_API_KEY
   @rsa_key: do ->
     (await readFile '/tmp/binance/binance-private-key.pem').toString()
@@ -24,11 +24,9 @@ class Binance extends EventEmitter
       @client = new MainClient
         api_key: Binance.api_key
         api_secret: await Binance.rsa_key
-        beautifyResponse: true
       @ws = new WebsocketClient
         api_key: Binance.api_key
         api_secret: await Binance.rsa_key
-        beautify: true
       @ws
         .on 'open', ->
           console.log "binance ws opened"
@@ -76,24 +74,5 @@ class Binance extends EventEmitter
             close: k.c
             volume: k.v
     ret
-
-  data: ({code, beginTime, freq} = {}) ->
-    code ?= 'BTCUSDT'
-    freq ?= '1'
-    stream = @streamKL 
-      code: code
-      freq: freq
-    destroy = ->
-      stream.destroy()
-    history = []
-    if beginTime?
-      history = await @historyKL
-        code: code
-        freq: freq
-        start: beginTime
-    g = ->
-      yield from history
-      yield from await fromEmitter stream, onNext: 'data'
-    {g, destroy}
 
 export default Binance
