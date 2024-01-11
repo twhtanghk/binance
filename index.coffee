@@ -9,7 +9,7 @@ import {MainClient, WebsocketClient} from 'binance'
 class Binance extends Broker
   @api_key: process.env.BINANCE_API_KEY
   @rsa_key: do ->
-    (await readFile '/tmp/binance/binance-private-key.pem').toString()
+    (await readFile process.env.BINANCE_RSA_KEY).toString()
   @freqMap: (interval) ->
     map =
       '1': '1m'
