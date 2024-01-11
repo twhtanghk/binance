@@ -47,6 +47,7 @@ class Binance extends Broker
       startTime: start.valueOf()
       endTime: end.valueOf())
       .map ([timestamp, open, high, low, close, volume, ...]) ->
+        timestamp /= 1000
         {code, freq, timestamp, open, high, low, close, volume}
 
   streamKL: ({code, freq} = {}) ->
@@ -67,7 +68,7 @@ class Binance extends Broker
           ret.push
             code: code
             freq: freq
-            timestamp: k.t
+            timestamp: k.t / 1000
             high: k.h
             low: k.l
             open: k.o
