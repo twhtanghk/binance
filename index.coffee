@@ -48,7 +48,16 @@ class Binance extends Broker
       endTime: end.valueOf())
       .map ([timestamp, open, high, low, close, volume, ...]) ->
         timestamp /= 1000
-        {code, freq, timestamp, open, high, low, close, volume}
+        {
+          code
+          freq
+          timestamp
+          open: parseFloat open
+          high: parseFloat high
+          low: parseFloat low
+          close: parseFloat close
+          volume: parseFloat volume
+        }
 
   streamKL: ({code, freq} = {}) ->
     code ?= 'BTCUSDT'
@@ -69,11 +78,11 @@ class Binance extends Broker
             code: code
             freq: freq
             timestamp: k.t / 1000
-            high: k.h
-            low: k.l
-            open: k.o
-            close: k.c
-            volume: k.v
+            high: parseFloat k.h
+            low: parseFloat k.l
+            open: parseFloat k.o
+            close: parseFloat k.c
+            volume: parseFloat k.v
     ret
 
 export default Binance
