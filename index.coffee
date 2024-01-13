@@ -40,12 +40,22 @@ class Binance extends Broker
     freq ?= '1'
     end ?= moment()
     start ?= moment end
-      .subtract freqDuration[freq]
-    (await @client.getKlines 
-      symbol: code
-      interval: Binance.freqMap freq
-      startTime: start.valueOf()
-      endTime: end.valueOf())
+      .subtract freqDuration[freq].dataFetched
+    ret = []
+    while true
+      curr = await @client.getKlines
+        symbol: code
+        interval: Binance.freqMap freq
+        startTime: start.valueOf()
+        endTime: end.valueOf()
+      if curr.length != 0
+        [..., last] = ret = ret.concat curr
+        [timestamp, ...] = last
+        start = moment timestamp
+          .add freqDuration[freq].duration
+      else
+        break
+    ret
       .map ([timestamp, open, high, low, close, volume, ...]) ->
         timestamp /= 1000
         {
