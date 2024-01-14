@@ -57,11 +57,11 @@ class Binance extends Broker
         break
     ret
       .map ([timestamp, open, high, low, close, volume, ...]) ->
-        timestamp /= 1000
         {
-          code
-          freq
-          timestamp
+          market: 'crypto'
+          code: code
+          freq: freq
+          timestamp: timestamp / 1000
           open: parseFloat open
           high: parseFloat high
           low: parseFloat low
@@ -85,6 +85,7 @@ class Binance extends Broker
         if s == code
           ret.resume()
           ret.push
+            market: 'crypto'
             code: code
             freq: freq
             timestamp: k.t / 1000
