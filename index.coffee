@@ -4,8 +4,15 @@ import fromEmitter from '@async-generators/from-emitter'
 import {EventEmitter} from 'events'
 import {readFile} from 'fs/promises'
 import {MainClient, WebsocketClient} from 'binance'
-{Broker, freqDuration} = require('algotrader/data').default
+{Broker, freqDuration} = AlgoTrader = require('algotrader/data').default
 
+class Account extends AlgoTrader.Account
+  constructor: ({broker}) ->
+    super()
+    @broker = broker
+  position: ->
+    await @broker.client.getBalances()
+    
 class Binance extends Broker
   @api_key: process.env.BINANCE_API_KEY
   @rsa_key: do ->
@@ -95,5 +102,7 @@ class Binance extends Broker
             close: parseFloat k.c
             volume: parseFloat k.v
     ret
+  accounts: ->
+    [new Account broker: @]
 
 export default Binance
