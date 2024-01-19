@@ -11,8 +11,15 @@ class Account extends AlgoTrader.Account
     super()
     @broker = broker
   position: ->
-    await @broker.client.getBalances()
-    
+    (await @broker.client.getBalances())
+      .filter (i) ->
+        i.free != '0'
+      .map ({coin, free}) ->
+        coin: coin
+        free: parseFloat free
+  historyOrder: ->
+    (await @broker.client.getAllOrders symbol: 'ETHBTC')
+
 class Binance extends Broker
   @api_key: process.env.BINANCE_API_KEY
   @rsa_key: do ->
