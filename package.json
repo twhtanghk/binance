@@ -18,10 +18,12 @@
   "homepage": "https://github.com/twhtanghk/binance#readme",
   "dependencies": {
     "@async-generators/from-emitter": "^0.3.0",
-    "algotrader": "github:twhtanghk/algotrader",
+    "algotrader": "file:../algotrader",
+    "axios": "^0.27.2",
     "binance": "^2.8.15",
     "coffeescript": "^2.7.0",
     "esm": "^3.2.25",
-    "moment": "^2.30.1"
+    "moment": "^2.30.1",
+    "rxjs": "^7.8.1"
   }
 }

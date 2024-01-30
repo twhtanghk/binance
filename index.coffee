@@ -4,7 +4,8 @@ import fromEmitter from '@async-generators/from-emitter'
 import {EventEmitter} from 'events'
 import {readFile} from 'fs/promises'
 import {MainClient, WebsocketClient} from 'binance'
-{Broker, freqDuration} = AlgoTrader = require('algotrader/data').default
+{Broker, freqDuration} = AlgoTrader = require('algotrader/rxData').default
+import {map, from, filter} from 'rxjs'
 
 class Account extends AlgoTrader.Account
   constructor: ({broker}) ->
@@ -17,6 +18,8 @@ class Account extends AlgoTrader.Account
       .map ({coin, free}) ->
         coin: coin
         free: parseFloat free
+  placeOrder: (opts) ->
+    (await @broker.client.submitNewOrder opts)
   historyOrder: ->
     (await @broker.client.getAllOrders symbol: 'ETHBTC')
 
@@ -25,12 +28,12 @@ class Binance extends Broker
   @rsa_key: do ->
     (await readFile process.env.BINANCE_RSA_KEY).toString()
   @freqMap: (interval) ->
-    map =
+    bmap =
       '1': '1m'
       '5': '5m'
       '15': '15m'
       '30': '30m'
-    return if interval of map then map[interval] else interval
+    return if interval of bmap then bmap[interval] else interval
 
   constructor: ->
     super()
@@ -44,6 +47,11 @@ class Binance extends Broker
       @ws
         .on 'open', ->
           console.log "binance ws opened"
+        .on 'message', (msg) =>
+          try
+            @next msg
+          catch err
+            console.log err
         .on 'reconnected', ->
           console.log 'binance ws reconnected'
         .on 'error', console.error
@@ -69,46 +77,36 @@ class Binance extends Broker
           .add freqDuration[freq].duration
       else
         break
-    ret
-      .map ([timestamp, open, high, low, close, volume, ...]) ->
-        {
-          market: 'crypto'
-          code: code
-          freq: freq
-          timestamp: timestamp / 1000
-          open: parseFloat open
-          high: parseFloat high
-          low: parseFloat low
-          close: parseFloat close
-          volume: parseFloat volume
-        }
+    from ret.map ([timestamp, open, high, low, close, volume, ...]) ->
+      market: 'crypto'
+      code: code
+      freq: freq
+      timestamp: timestamp / 1000
+      open: parseFloat open
+      high: parseFloat high
+      low: parseFloat low
+      close: parseFloat close
+      volume: parseFloat volume
 
   streamKL: ({code, freq} = {}) ->
     code ?= 'BTCUSDT'
     freq ?= '1'
-    ret = new Readable
-      objectMode: true
-      read: ->
-        @pause()
-      destroy: =>
-        @ws.closeAll false
     @ws
       .subscribeSpotKline code, Binance.freqMap freq
-      .on 'message', (msg) ->
-        {e, E, s, k} = JSON.parse msg
-        if s == code
-          ret.resume()
-          ret.push
-            market: 'crypto'
-            code: code
-            freq: freq
-            timestamp: k.t / 1000
-            high: parseFloat k.h
-            low: parseFloat k.l
-            open: parseFloat k.o
-            close: parseFloat k.c
-            volume: parseFloat k.v
-    ret
+    kl = filter ({e, E, s, k}) ->
+      s == code and k.i == Binance.freqMap(freq)
+    transform = map ({e, E, s, k}) ->
+      market: 'crypto'
+      code: code
+      freq: freq
+      timestamp: k.t / 1000
+      high: parseFloat k.h
+      low: parseFloat k.l
+      open: parseFloat k.o
+      close: parseFloat k.c
+      volume: parseFloat k.v
+    @pipe kl, transform
+
   accounts: ->
     [new Account broker: @]
 
