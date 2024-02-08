@@ -1,18 +1,21 @@
-moment = require 'moment'
+Promise = require 'bluebird'
+import {map} from 'rxjs'
+import moment from 'moment'
 Binance = require('../index').default
-
-debug = (obj) ->
-  console.error JSON.stringify obj, null, 2
 
 do ->
   try 
     broker = await new Binance()
+    code = 'BTCUSDT'
 
-    {g, destroy} = await broker.dataKL
-      start: moment().subtract week: 1
-      freq: '1'
-    for await i from g()
-      i.date = new Date i.timestamp * 1000
-      console.log i
+    (await broker.dataKL {code: code, start: moment().subtract(day: 1), freq: '1d'})
+      .subscribe (i) ->
+        i.date = new Date(i.timestamp * 1000)
+        console.log i
+
+    Promise
+      .delay 1000
+      .then ->
+        broker.unsubKL {code: code, freq: '1d'}
   catch err
     console.error err

@@ -18,10 +18,21 @@ class Account extends AlgoTrader.Account
       .map ({coin, free}) ->
         coin: coin
         free: parseFloat free
+  historyOrder: ({code, beginTime, endTime}={}) ->
+    code ?= 'ETHBTC'
+    beginTime ?= moment().subtract hour: 12
+    endTime ?= moment()
+    await @broker.client.getAllOrders 
+      symbol: code
+      startTime: beginTime.toDate().getTime()
+      endTime: endTime.toDate().getTime()
+  streamOrder: ->
+    await @broker.ws.subscribeSpotUserDataStream()
+    @broker
+      .pipe tap (x) ->
+        console.log x
   placeOrder: (opts) ->
     (await @broker.client.submitNewOrder opts)
-  historyOrder: ->
-    (await @broker.client.getAllOrders symbol: 'ETHBTC')
 
 class Binance extends Broker
   @api_key: process.env.BINANCE_API_KEY
@@ -35,6 +46,9 @@ class Binance extends Broker
       '30': '30m'
     return if interval of bmap then bmap[interval] else interval
 
+  reqId: 0
+  subList: [] # subscribed list of wsKey
+
   constructor: ->
     super()
     return do =>
@@ -45,8 +59,9 @@ class Binance extends Broker
         api_key: Binance.api_key
         api_secret: await Binance.rsa_key
       @ws
-        .on 'open', ->
-          console.log "binance ws opened"
+        .on 'open', ({wsKey}) =>
+          @subList.push wsKey
+          console.log "binance ws opened #{wsKey}"
         .on 'message', (msg) =>
           try
             @next msg
@@ -107,6 +122,12 @@ class Binance extends Broker
       volume: parseFloat k.v
     @pipe kl, transform
 
+  unsubKL: ({code, freq}) ->
+    key = "spot_kline_#{code.toLowerCase()}_#{freq}"
+    @subList = @subList.filter (k) -> k != key
+    @ws.close key, false
+
+  # defined in env.BINANCE_API_KEY and BINANCE.RSA_KEY
   accounts: ->
     [new Account broker: @]
 
