@@ -5,7 +5,7 @@ import {EventEmitter} from 'events'
 import {readFile} from 'fs/promises'
 import {MainClient, WebsocketClient} from 'binance'
 {Broker, freqDuration} = AlgoTrader = require('algotrader/rxData').default
-import {map, from, filter} from 'rxjs'
+import {tap, map, from, filter} from 'rxjs'
 
 class Account extends AlgoTrader.Account
   constructor: ({broker}) ->
@@ -22,17 +22,26 @@ class Account extends AlgoTrader.Account
     code ?= 'ETHBTC'
     beginTime ?= moment().subtract hour: 12
     endTime ?= moment()
-    await @broker.client.getAllOrders 
+    from await @broker.client.getAllOrders 
       symbol: code
       startTime: beginTime.toDate().getTime()
       endTime: endTime.toDate().getTime()
   streamOrder: ->
     await @broker.ws.subscribeSpotUserDataStream()
     @broker
+      .pipe filter ({type, data}) ->
+        type == 'order'
       .pipe tap (x) ->
         console.log x
-  placeOrder: (opts) ->
-    (await @broker.client.submitNewOrder opts)
+  enableOrder: (index) ->
+    super opts
+    {code, side, type, qty, price} = @orderList[index]
+    ret = await @broker.client.submitNewOrder {symbol: code, side, type, qty, price}
+    {orderId} = ret
+    @orderList[index].id = orderId
+    @orderList[index]
+  cancelOrder: (order) ->
+    await @broker.client.cancelOrder {symbol: order.code, orderId: order.id}
 
 class Binance extends Broker
   @api_key: process.env.BINANCE_API_KEY
@@ -128,7 +137,9 @@ class Binance extends Broker
     @ws.close key, false
 
   # defined in env.BINANCE_API_KEY and BINANCE.RSA_KEY
+  @ACCOUNT: null
   accounts: ->
-    [new Account broker: @]
+    Binance.ACCOUNT ?= new Account broker: @
+    [Binance.ACCOUNT]
 
 export default Binance
