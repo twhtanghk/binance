@@ -5,7 +5,7 @@ import {EventEmitter} from 'events'
 import {readFile} from 'fs/promises'
 import {MainClient, WebsocketClient} from 'binance'
 {Broker, freqDuration} = AlgoTrader = require('algotrader/rxData').default
-import {tap, map, from, filter} from 'rxjs'
+import {tap, map, from, filter, fromEvent} from 'rxjs'
 
 class Account extends AlgoTrader.Account
   constructor: ({broker}) ->
@@ -115,8 +115,7 @@ class Binance extends Broker
   streamKL: ({code, freq} = {}) ->
     code ?= 'BTCUSDT'
     freq ?= '1'
-    @ws
-      .subscribeSpotKline code, Binance.freqMap freq
+    conn = @ws.subscribeSpotKline code, Binance.freqMap freq
     kl = filter ({e, E, s, k}) ->
       s == code and k.i == Binance.freqMap(freq)
     transform = map ({e, E, s, k}) ->
@@ -129,7 +128,8 @@ class Binance extends Broker
       open: parseFloat k.o
       close: parseFloat k.c
       volume: parseFloat k.v
-    @pipe kl, transform
+    fromEvent conn, 'message'
+      .pipe kl, transform
 
   unsubKL: ({code, freq}) ->
     key = "spot_kline_#{code.toLowerCase()}_#{freq}"
@@ -141,5 +141,19 @@ class Binance extends Broker
   accounts: ->
     Binance.ACCOUNT ?= new Account broker: @
     [Binance.ACCOUNT]
+
+  orderBook: ({market, code}) ->
+    conn = @ws.subscribePartialBookDepths code, 10, 1000, 'spot'
+    (fromEvent conn, 'message')
+      .pipe map ({data}) ->
+        {bids, asks} = JSON.parse data
+        bid: bids.map ([price, volume]) ->
+          price = parseFloat price
+          volume = parseFloat volume
+          {price, volume}
+        ask: asks.map ([price, volume]) ->
+          price = parseFloat price
+          volume = parseFloat volume
+          {price, volume}
 
 export default Binance
