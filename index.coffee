@@ -31,8 +31,6 @@ class Account extends AlgoTrader.Account
     @broker
       .pipe filter ({type, data}) ->
         type == 'order'
-      .pipe tap (x) ->
-        console.log x
   enableOrder: (index) ->
     super opts
     {code, side, type, qty, price} = @orderList[index]
@@ -116,20 +114,21 @@ class Binance extends Broker
     code ?= 'BTCUSDT'
     freq ?= '1'
     conn = @ws.subscribeSpotKline code, Binance.freqMap freq
-    kl = filter ({e, E, s, k}) ->
-      s == code and k.i == Binance.freqMap(freq)
-    transform = map ({e, E, s, k}) ->
-      market: 'crypto'
-      code: code
-      freq: freq
-      timestamp: k.t / 1000
-      high: parseFloat k.h
-      low: parseFloat k.l
-      open: parseFloat k.o
-      close: parseFloat k.c
-      volume: parseFloat k.v
     fromEvent conn, 'message'
-      .pipe kl, transform
+      .pipe map ({data}) ->
+        JSON.parse data
+      .pipe filter ({e, E, s, k}) ->
+        s == code and k.i == Binance.freqMap(freq)
+      .pipe map ({e, E, s, k}) ->
+        market: 'crypto'
+        code: code
+        freq: freq
+        timestamp: k.t / 1000
+        high: parseFloat k.h
+        low: parseFloat k.l
+        open: parseFloat k.o
+        close: parseFloat k.c
+        volume: parseFloat k.v
 
   unsubKL: ({code, freq}) ->
     key = "spot_kline_#{code.toLowerCase()}_#{freq}"
@@ -144,9 +143,11 @@ class Binance extends Broker
 
   orderBook: ({market, code}) ->
     conn = @ws.subscribePartialBookDepths code, 10, 1000, 'spot'
-    (fromEvent conn, 'message')
+    fromEvent conn, 'message'
       .pipe map ({data}) ->
         {bids, asks} = JSON.parse data
+        market: market
+        code: code
         bid: bids.map ([price, volume]) ->
           price = parseFloat price
           volume = parseFloat volume
