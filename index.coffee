@@ -1,3 +1,4 @@
+_ = require 'lodash'
 {Readable} = require 'stream'
 import moment from 'moment'
 import fromEmitter from '@async-generators/from-emitter'
@@ -6,6 +7,14 @@ import {readFile} from 'fs/promises'
 import {MainClient, WebsocketClient} from 'binance'
 {Broker, freqDuration} = AlgoTrader = require('algotrader/rxData').default
 import {tap, map, from, filter, fromEvent} from 'rxjs'
+
+class Order extends AlgoTrader.Order
+  @SIDE:
+    buy: 'BUY'
+    sell: 'SELL'
+
+  @TYPE:
+    limit: 'LIMIT'
 
 class Account extends AlgoTrader.Account
   constructor: ({broker}) ->
@@ -27,19 +36,37 @@ class Account extends AlgoTrader.Account
       startTime: beginTime.toDate().getTime()
       endTime: endTime.toDate().getTime()
   streamOrder: ->
-    await @broker.ws.subscribeSpotUserDataStream()
-    @broker
-      .pipe filter ({type, data}) ->
-        type == 'order'
+    conn = await @broker.ws.subscribeSpotUserDataStream()
+    fromEvent conn, 'message'
+      .pipe map ({type, data}) ->
+        JSON.parse data
+      .pipe filter ({e}) ->
+        e == 'executionReport'
+      .pipe map (data) ->
+        {s, S, i, o, f, q, p, X, O} = data
+        code = s
+        side = (_.invert Order.SIDE)[S]
+        id = i
+        type = (_.invert Order.TYPE)[o]
+        timeInForce = f
+        qty = parseFloat q
+        price = parseFloat p
+        status = X
+        createTime = O / 1000
+        {code, side, id, type, timeInForce, qty, price, status, createTime}
   enableOrder: (index) ->
-    super opts
-    {code, side, type, qty, price} = @orderList[index]
-    ret = await @broker.client.submitNewOrder {symbol: code, side, type, qty, price}
-    {orderId} = ret
-    @orderList[index].id = orderId
-    @orderList[index]
-  cancelOrder: (order) ->
-    await @broker.client.cancelOrder {symbol: order.code, orderId: order.id}
+    super index
+    {code, side, type, timeInForce, qty, price} = @orderList[index]
+    side = Order.SIDE[side]
+    type = Order.TYPE[type] 
+    timeInForce ?= 'GTC'
+    timestamp = Date.now()
+    quantity = qty
+    {orderId, status} = await @broker.client.submitNewOrder {symbol: code, side, type, timeInForce, quantity, price, timestamp}
+    _.extend @orderList[index], {status, id: orderId}
+  cancelOrder: ({id}) ->
+    {code, id} = _.find @orderList, {id}
+    await @broker.client.cancelOrder {symbol: code, orderId: id}
 
 class Binance extends Broker
   @api_key: process.env.BINANCE_API_KEY
