@@ -21,14 +21,17 @@ class Account extends AlgoTrader.Account
     super()
     @broker = broker
   position: ->
+    balance = (acc, {coin, free}) ->
+      acc[coin] = free
+      acc
     (await @broker.client.getBalances())
-      .filter (i) ->
-        i.free != '0'
       .map ({coin, free}) ->
-        coin: coin
-        free: parseFloat free
+        {coin, free: parseFloat free}
+      .filter ({coin, free}) ->
+        free != 0
+      .reduce balance, {}
   historyOrder: ({code, beginTime, endTime}={}) ->
-    code ?= 'ETHBTC'
+    code ?= 'ETHUSDT'
     beginTime ?= moment().subtract hour: 12
     endTime ?= moment()
     from await @broker.client.getAllOrders 
