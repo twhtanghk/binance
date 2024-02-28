@@ -23,21 +23,31 @@ do ->
       .pipe skipDup 'timestamp'
       .pipe strategy.indicator()
       .pipe strategy[process.argv[2]]()
+      .pipe filter (i) ->
+        'entryExit' of i
       .pipe tap console.log
       .subscribe (i) ->
-        if 'entryExit' of i
-          position = await account.position()
-          {high, low} = i
-          price = (high + low) / 2
-          opts =
-            code: opts.code
-            side: i.entryExit.side
-            price: price
-          if i.entryExit.side == 'buy' and position.USDT != 0
+        position = await account.position()
+        {high, low} = i
+        price = (high + low) / 2
+        opts =
+          code: opts.code
+          side: i.entryExit.side
+          type: 'limit'
+          price: price
+        try
+          if i.entryExit.side == 'buy' and position.USDT? and position.USDT != 0
             opts.qty = position.USDT / price
-          if i.entryExit.side == 'sell' and position.ETH != 0
+            console.log opts
+            index = await account.placeOrder opts
+            await account.enableOrder index
+          if i.entryExit.side == 'sell' and position.ETH? and position.ETH != 0
             opts.qty = position.ETH
-          await account.placeOrder opts
+            console.log opts
+            index = await account.placeOrder opts
+            await account.enableOrder index
+        catch err
+          console.error err
     (await account.orders())
       .subscribe console.log
   catch err
