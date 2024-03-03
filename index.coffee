@@ -64,7 +64,8 @@ class Account extends AlgoTrader.Account
     type = Order.TYPE[type] 
     timeInForce ?= 'GTC'
     timestamp = Date.now()
-    quantity = qty.toFixed 8
+    quantity = parseFloat qty.toFixed 8
+    price = parseFloat price.toFixed 8
     {orderId, status} = await @broker.client.submitNewOrder {symbol: code, side, type, timeInForce, quantity, price, timestamp}
     _.extend @orderList[index], {status, id: orderId}
   cancelOrder: ({id}) ->
