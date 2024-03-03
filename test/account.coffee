@@ -4,9 +4,19 @@ do ->
   try 
     broker = await new Binance()
     account = await broker.defaultAcc()
-    console.log JSON.stringify (await account.position()), null, 2
+    position = await account.position()
+    console.log JSON.stringify position, null, 2
     (await account.historyOrder()) 
       .subscribe console.log
-    #account.placeOrder code: 'ETHUSDT', market: 'crypto', price: 2000, qty: 0.01
+    console.log JSON.stringify (await broker.client.getExchangeInfo symbol: 'ETHUSDT'), null, 2
+###
+    price = parseFloat process.argv[2]
+    await account.enableOrder await account.placeOrder
+      code: 'ETHUSDT'
+      side: 'buy'
+      type: 'limit'
+      price: price 
+      qty: Math.floor(position.USDT * 10000 / price) / 10000
+###
   catch err
     console.error err
