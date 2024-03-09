@@ -11,4 +11,4 @@ RUN  apt-get update \
 &&  rm -rf /var/lib/apt/lists/* /tmp/$(basename $SRC) \
 &&  npm install
 
-CMD top -b -d 1000
+CMD npm test
