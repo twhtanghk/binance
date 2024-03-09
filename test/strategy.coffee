@@ -47,7 +47,7 @@ do ->
       .subscribe (i) ->
         position = await account.position()
         {open, close} = i
-        price = Math.floor((open + close) * 100 / 2) / 100
+        price = (await broker.quickQuote())[i.entryExit.side]
         params =
           code: opts.code
           side: i.entryExit.side
