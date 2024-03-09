@@ -6,7 +6,7 @@ strategy = require('algotrader/rxStrategy').default
 import {tap, map, filter} from 'rxjs'
 
 enable = false
-process.on 'SIGTERM', ->
+process.on 'SIGUSR1', ->
   enable = !enable
   console.log "enable = #{enable}"
 
