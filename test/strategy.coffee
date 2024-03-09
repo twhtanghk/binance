@@ -16,24 +16,29 @@ if process.argv.length != 3
 
 do ->
   try 
+    [..., selectedStrategy] = process.argv
+    market = 'crypto'
+    code = 'ETHUSDT'
+    freq = '5'
     broker = await new Binance()
     account = await broker.defaultAcc()
     opts =
-      market: 'crypto'
-      code: 'ETHUSDT'
-      start: moment().subtract minute: 60 * 5
-      freq: '5'
+      market: market
+      code: code
+      start: moment().subtract minute: 60 * parseInt freq
+      freq: freq
     (await broker.dataKL opts)
-      .pipe filter ({market, code, freq}) ->
-        market == opts.market and code == opts.code and freq == opts.freq
+      .pipe filter (i) ->
+        market == i.market and code == i.code and freq == i.freq
       .pipe skipDup 'timestamp'
       .pipe map (i) ->
         i.date = new Date i.timestamp * 1000
         i
       .pipe strategy.indicator()
-      .pipe strategy[process.argv[2]]()
+      .pipe strategy[selectedStrategy]()
       .pipe filter (i) ->
         'entryExit' of i
+      .pipe tap console.log
       .pipe filter ->
         enable
       .pipe filter (i) ->
@@ -61,7 +66,5 @@ do ->
             await account.enableOrder index
         catch err
           console.error err
-    (await account.orders())
-      .subscribe console.log
   catch err
     console.error err
