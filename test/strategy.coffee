@@ -49,7 +49,7 @@ do ->
       .subscribe (i) ->
         position = await account.position()
         {open, close} = i
-        price = (await broker.quickQuote())[i.entryExit.side]
+        price = (await broker.quickQuote({market, code}))[i.entryExit.side]
         params =
           code: opts.code
           side: i.entryExit.side
