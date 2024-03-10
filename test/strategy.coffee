@@ -42,7 +42,9 @@ do ->
       .pipe filter ->
         enable
       .pipe filter (i) ->
-        i['close.stdev'] > i['close'] * 0.4 / 100
+        # close price change sharply or remain in flat
+        i['close.stdev'] > i['close'] * 0.4 / 100 or
+        i['close.stdev'] < i['close'] * 0.12 / 100 
       .pipe tap console.log
       .subscribe (i) ->
         position = await account.position()
