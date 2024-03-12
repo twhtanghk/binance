@@ -19,7 +19,6 @@
   "dependencies": {
     "@async-generators/from-emitter": "^0.3.0",
     "algotrader": "github:twhtanghk/algotrader",
-    "axios": "^0.27.2",
     "binance": "^2.8.15",
     "coffeescript": "^2.7.0",
     "esm": "^3.2.25",
