@@ -1,8 +1,6 @@
 _ = require 'lodash'
 {Readable} = require 'stream'
 import moment from 'moment'
-import fromEmitter from '@async-generators/from-emitter'
-import {EventEmitter} from 'events'
 import {readFile} from 'fs/promises'
 import {MainClient, WebsocketClient} from 'binance'
 {Broker, freqDuration} = AlgoTrader = require('algotrader/rxData').default
