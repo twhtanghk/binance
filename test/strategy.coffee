@@ -36,7 +36,7 @@ do ->
         i
       .pipe strategy.indicator()
       .pipe strategy[selectedStrategy]()
-      .pipe strategy.volUp()
+      .pipe strategy.volUp 3
       .pipe filter (i) ->
         'entryExit' of i
       .pipe tap console.log
