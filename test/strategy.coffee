@@ -36,7 +36,7 @@ do ->
         i
       .pipe strategy.indicator()
       .pipe strategy[selectedStrategy]()
-      .pipe strategy.volUp 3
+      .pipe strategy.volUp() 
       .pipe filter (i) ->
         'entryExit' of i
       .pipe tap console.log
@@ -52,12 +52,14 @@ do ->
           type: 'limit'
           price: price
         try
-          if i.entryExit.side == 'buy' and position.USDT? and position.USDT > 10
+          meanReversion = _.find i.entryExit, strategy: 'meanReversion'
+          volUp = _.find i.entryExit, strategy: 'volUp'
+          if meanReversion?.side == 'buy' and volUp?.side and position.USDT? and position.USDT > 10
             params.qty = Math.floor(position.USDT * 1000 / price) / 1000
             console.log params
             index = await account.placeOrder params
             await account.enableOrder index
-          if i.entryExit.side == 'sell' and position.ETH? and position.ETH > 0.01
+          if meanReversion?.side == 'sell' and volUp?.side and position.ETH? and position.ETH > 0.01
             params.qty = Math.floor(position.ETH * 1000) / 1000
             console.log params
             index = await account.placeOrder params
