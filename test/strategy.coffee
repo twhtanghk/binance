@@ -42,6 +42,14 @@ do ->
       .pipe tap console.log
       .pipe filter ->
         enable
+      .pipe filter ({entryExit}) ->
+        entryExit[0]?.strategy == 'meanReversion'
+      .pipe filter ({entryExit}) ->
+        entryExit[1]?.strategy == 'volUp'
+      .pipe filter (i) ->
+        # close price change sharply or remain in flat
+        i['close.stdev'] > i['close'] * 0.4 / 100 or
+        i['close.stdev'] < i['close'] * 0.12 / 100 
       .subscribe (i) ->
         meanReversion = _.find i.entryExit, strategy: 'meanReversion'
         volUp = _.find i.entryExit, strategy: 'volUp'

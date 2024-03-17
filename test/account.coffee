@@ -6,10 +6,10 @@ do ->
     account = await broker.defaultAcc()
     position = await account.position()
     console.log JSON.stringify position, null, 2
+###
     (await account.historyOrder()) 
       .subscribe console.log
     console.log JSON.stringify (await broker.client.getExchangeInfo symbol: 'ETHUSDT'), null, 2
-###
     price = parseFloat process.argv[2]
     await account.enableOrder await account.placeOrder
       code: 'ETHUSDT'
