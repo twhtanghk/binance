@@ -43,17 +43,17 @@ do ->
       .pipe filter ->
         enable
       .subscribe (i) ->
+        meanReversion = _.find i.entryExit, strategy: 'meanReversion'
+        volUp = _.find i.entryExit, strategy: 'volUp'
         position = await account.position()
         {open, close} = i
-        price = (await broker.quickQuote({market, code}))[i.entryExit.side]
+        price = (await broker.quickQuote({market, code}))[meanReversion.side]
         params =
           code: opts.code
-          side: i.entryExit.side
+          side: meanReversion.side
           type: 'limit'
           price: price
         try
-          meanReversion = _.find i.entryExit, strategy: 'meanReversion'
-          volUp = _.find i.entryExit, strategy: 'volUp'
           if meanReversion?.side == 'buy' and volUp?.side and position.USDT? and position.USDT > 10
             params.qty = Math.floor(position.USDT * 1000 / price) / 1000
             console.log params
