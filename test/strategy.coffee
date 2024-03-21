@@ -47,22 +47,25 @@ do ->
         i['close.stdev'] < i['close'] * 0.12 / 100 
       .pipe tap console.log
       .subscribe (i) ->
-        position = await account.position()
+        {ETH, USDT} = await account.position()
         {open, close} = i
-        price = (await broker.quickQuote({market, code}))[i.entryExit.side]
+        {buy, sell} = await broker.quickQuote {market, code}
+        total = ETH * buy + USDT
+        share = total / 3
+        price = {buy, sell}[i.entryExit.side]
         params =
           code: opts.code
           side: i.entryExit.side
           type: 'limit'
           price: price
         try
-          if i.entryExit.side == 'buy' and position.USDT? and position.USDT > 10
-            params.qty = Math.floor(position.USDT * 1000 / price) / 1000
+          if i.entryExit.side == 'buy' and USDT > share
+            params.qty = Math.floor(share * 1000 / price) / 1000
             console.log params
             index = await account.placeOrder params
             await account.enableOrder index
-          if i.entryExit.side == 'sell' and position.ETH? and position.ETH > 0.01
-            params.qty = Math.floor(position.ETH * 1000) / 1000
+          if i.entryExit.side == 'sell' and ETH * price > share
+            params.qty = Math.floor(share / price * 1000) / 1000
             console.log params
             index = await account.placeOrder params
             await account.enableOrder index
