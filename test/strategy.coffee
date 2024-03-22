@@ -51,22 +51,17 @@ do ->
         {open, close} = i
         {buy, sell} = await broker.quickQuote {market, code}
         total = ETH * buy + USDT
-        share = total / 3
+        share = total / 5
         price = {buy, sell}[i.entryExit.side]
         params =
           code: opts.code
           side: i.entryExit.side
           type: 'limit'
           price: price
+          qty: Math.floor(share * 1000 / price) / 1000
+        console.log params
         try
-          if i.entryExit.side == 'buy' and USDT > share
-            params.qty = Math.floor(share * 1000 / price) / 1000
-            console.log params
-            index = await account.placeOrder params
-            await account.enableOrder index
-          if i.entryExit.side == 'sell' and ETH * price > share
-            params.qty = Math.floor(share / price * 1000) / 1000
-            console.log params
+          if (i.entryExit.side == 'buy' and USDT > share) or (i.entryExit.side == 'sell' and ETH * price > share)
             index = await account.placeOrder params
             await account.enableOrder index
         catch err
