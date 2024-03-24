@@ -6,7 +6,7 @@ import {EventEmitter} from 'events'
 import {readFile} from 'fs/promises'
 import {MainClient, WebsocketClient} from 'binance'
 {Broker, freqDuration} = AlgoTrader = require('algotrader/rxData').default
-import {tap, map, from, filter, fromEvent} from 'rxjs'
+import {concat, tap, map, from, filter, fromEvent} from 'rxjs'
 
 class Order extends AlgoTrader.Order
   @SIDE:
@@ -34,10 +34,17 @@ class Account extends AlgoTrader.Account
     code ?= 'ETHUSDT'
     beginTime ?= moment().subtract hour: 12
     endTime ?= moment()
-    from await @broker.client.getAllOrders 
-      symbol: code
-      startTime: beginTime.toDate().getTime()
-      endTime: endTime.toDate().getTime()
+    ret = []
+    while beginTime.isBefore endTime
+      next = moment beginTime
+      next = next.add hour: 12
+      next = if next.isBefore endTime then next else endTime
+      ret.push from await @broker.client.getAllOrders 
+        symbol: code
+        startTime: beginTime.toDate().getTime()
+        endTime: next.toDate().getTime()
+      beginTime = next
+    concat ...ret
   streamOrder: ->
     conn = await @broker.ws.subscribeSpotUserDataStream()
     fromEvent conn, 'message'
