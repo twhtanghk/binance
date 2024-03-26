@@ -92,7 +92,6 @@ class Binance extends Broker
     return if interval of bmap then bmap[interval] else interval
 
   reqId: 0
-  subList: [] # subscribed list of wsKey
 
   constructor: ->
     super()
@@ -104,9 +103,8 @@ class Binance extends Broker
         api_key: Binance.api_key
         api_secret: await Binance.rsa_key
       @ws
-        .on 'open', ({wsKey}) =>
-          @subList.push wsKey
-          console.log "binance ws opened #{wsKey}"
+        .on 'open', ->
+          console.log "binance ws opened"
         .on 'message', (msg) =>
           try
             @next msg
@@ -170,7 +168,6 @@ class Binance extends Broker
 
   unsubKL: ({code, freq}) ->
     key = "spot_kline_#{code.toLowerCase()}_#{freq}"
-    @subList = @subList.filter (k) -> k != key
     @ws.close key, false
 
   # defined in env.BINANCE_API_KEY and BINANCE.RSA_KEY
