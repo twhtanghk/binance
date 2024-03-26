@@ -49,14 +49,15 @@ watch = ({broker, market, code, freq, selectedStrategy}) ->
       {ETH, USDT} = pos
       {buy, sell} = quote
       total = ETH * buy + USDT
-      share = total / 5
+      share = total / 3
+      price = quote[i.entryExit.side]
       (i.entryExit.side == 'buy' and USDT > share) or (i.entryExit.side == 'sell' and ETH * price > share)
     .pipe tap console.log
     .subscribe ({i, pos, quote}) ->
       {ETH, USDT} = pos
       {buy, sell} = quote
       total = ETH * buy + USDT
-      share = total / 5
+      share = total / 3
       price = quote[i.entryExit.side]
       params =
         code: opts.code
