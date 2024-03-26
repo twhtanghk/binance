@@ -3,12 +3,7 @@ moment = require 'moment'
 Binance = require('../index').default
 strategy = require('algotrader/rxStrategy').default
 {skipDup} = require('algotrader/analysis').default.ohlc
-import {fromEvent, tap, map, filter} from 'rxjs'
-
-enable = false
-process.on 'SIGUSR1', ->
-  enable = !enable
-  console.log "enable = #{enable}"
+import {concatMap, fromEvent, tap, map, filter} from 'rxjs'
 
 if process.argv.length != 3
   console.log 'node -r coffeescript/register -r esm test/strategy meanReversion'
@@ -33,20 +28,36 @@ watch = ({broker, market, code, freq, selectedStrategy}) ->
     .pipe filter (i) ->
       'entryExit' of i
     .pipe tap console.log
-    .pipe filter ->
-      enable
+    .pipe filter (i) ->
+      # filter those history data
+      moment()
+        .subtract minute: parseInt freq
+        .isBefore moment.unix i.timestamp
     .pipe filter (i) ->
       # close price change sharply or remain in flat
       i['close.stdev'] > i['close'] * 0.4 / 100 or
       i['close.stdev'] < i['close'] * 0.12 / 100 
-    .pipe tap console.log
-    .subscribe (i) ->
-      {ETH, USDT} = await account.position()
-      {open, close} = i
-      {buy, sell} = await broker.quickQuote {market, code}
+    .pipe concatMap (i) ->
+      from await account.position()
+        .map (pos) ->
+          {i, pos}
+    .pipe concatMap ({i, pos}) ->
+      from await broker.quickQuote {market, code}
+        .map (quote) ->
+          {i, pos, quote}
+    .pipe filter ({i, pos, quote}) ->
+      {ETH, USDT} = pos
+      {buy, sell} = quote
       total = ETH * buy + USDT
       share = total / 5
-      price = {buy, sell}[i.entryExit.side]
+      (i.entryExit.side == 'buy' and USDT > share) or (i.entryExit.side == 'sell' and ETH * price > share)
+    .pipe tap console.log
+    .subscribe ({i, pos, quote}) ->
+      {ETH, USDT} = pos
+      {buy, sell} = quote
+      total = ETH * buy + USDT
+      share = total / 5
+      price = quote[i.entryExit.side]
       params =
         code: opts.code
         side: i.entryExit.side
@@ -55,9 +66,8 @@ watch = ({broker, market, code, freq, selectedStrategy}) ->
         qty: Math.floor(share * 1000 / price) / 1000
       console.log params
       try
-        if (i.entryExit.side == 'buy' and USDT > share) or (i.entryExit.side == 'sell' and ETH * price > share)
-          index = await account.placeOrder params
-          await account.enableOrder index
+        index = await account.placeOrder params
+        await account.enableOrder index
       catch err
         console.error err
 
