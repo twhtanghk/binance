@@ -3,7 +3,7 @@ moment = require 'moment'
 Binance = require('../index').default
 strategy = require('algotrader/rxStrategy').default
 {skipDup} = require('algotrader/analysis').default.ohlc
-import {concatMap, fromEvent, tap, map, filter} from 'rxjs'
+import {from, concatMap, fromEvent, tap, map, filter} from 'rxjs'
 
 if process.argv.length != 3
   console.log 'node -r coffeescript/register -r esm test/strategy meanReversion'
@@ -31,22 +31,24 @@ watch = ({broker, market, code, freq, selectedStrategy}) ->
     .pipe filter (i) ->
       # filter those history data
       moment()
-        .subtract minute: parseInt freq
+        .subtract minute: 2 * parseInt freq
         .isBefore moment.unix i.timestamp
     .pipe filter (i) ->
       # close price change sharply or remain in flat
       i['close.stdev'] > i['close'] * 0.4 / 100 or
       i['close.stdev'] < i['close'] * 0.12 / 100 
     .pipe concatMap (i) ->
-      from await account.position()
-        .map (pos) ->
+      from do -> await account.position()
+        .pipe map (pos) ->
           {i, pos}
     .pipe concatMap ({i, pos}) ->
-      from await broker.quickQuote {market, code}
-        .map (quote) ->
+      from do -> await broker.quickQuote {market, code}
+        .pipe map (quote) ->
           {i, pos, quote}
     .pipe filter ({i, pos, quote}) ->
       {ETH, USDT} = pos
+      ETH ?= 0
+      USDT ?= 0
       {buy, sell} = quote
       total = ETH * buy + USDT
       share = total / 3
@@ -55,6 +57,8 @@ watch = ({broker, market, code, freq, selectedStrategy}) ->
     .pipe tap console.log
     .subscribe ({i, pos, quote}) ->
       {ETH, USDT} = pos
+      ETH ?= 0
+      USDT ?= 0
       {buy, sell} = quote
       total = ETH * buy + USDT
       share = total / 3
