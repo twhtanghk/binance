@@ -21,7 +21,7 @@ interval = ({broker, market, code, freq}) ->
       market == i.market and code == i.code and freq == i.freq
     .pipe skipDup 'timestamp'
     .pipe strategy.indicator()
-    .pipe strategy.meanInversion()
+    .pipe strategy.meanReversion()
     .pipe filter (i) ->
       'entryExit' of i
 
@@ -29,7 +29,7 @@ watch = ({broker, market, code}) ->
   account = await broker.defaultAcc()
   m5 = await interval {broker, market, code, freq: '5'}
   m15 = await interval {broker, market, code, freq: '15'}
-  combinaLatest [m5, m15]
+  combineLatest [m5, m15]
     .pipe tap console.log
     .pipe filter (i) ->
       # filter m5 and m15 fall within range
@@ -38,11 +38,11 @@ watch = ({broker, market, code}) ->
         .diff i[1], 'minute'
       if not ret < 15
         console.log 
-          m5: new Date i[0].timestamp
-          m15: new Date i[1].timestamp
+          m5: new Date i[0].timestamp * 1000
+          m15: new Date i[1].timestamp * 1000
       ret < 15
     .pipe map (i) ->
-      i[0].date = new Datei[0].timestamp
+      i[0].date = new Date[0].timestamp * 1000
       i[0]
    .pipe filter (i) ->
       # filter those history data
