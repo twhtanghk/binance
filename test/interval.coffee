@@ -24,13 +24,17 @@ interval = ({broker, market, code, freq}) ->
     .pipe strategy.meanReversion()
     .pipe filter (i) ->
       'entryExit' of i
+    .pipe filter (i) ->
+      # close price change sharply or remain in flat
+      i['close.stdev'] > i['close'] * 0.32 / 100 or
+      i['close.stdev'] < i['close'] * 0.12 / 100 
+    .pipe tap console.log
 
 watch = ({broker, market, code}) ->
   account = await broker.defaultAcc()
   m5 = await interval {broker, market, code, freq: '5'}
   m15 = await interval {broker, market, code, freq: '15'}
   combineLatest [m5, m15]
-    .pipe tap console.log
     .pipe filter (i) ->
       # filter m5 and m15 fall within range
       ret = moment
