@@ -10,11 +10,12 @@ if process.argv.length != 3
   process.exit 1
 
 interval = ({broker, market, code, freq}) ->
-  opts =
+  opts = {
     market
     code
     freq
     start: moment().subtract minute: 60 * parseInt freq
+  }
   (await broker.dataKL opts)
     .pipe filter (i) ->
       market == i.market and code == i.code and freq == i.freq
