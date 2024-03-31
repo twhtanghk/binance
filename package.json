@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.coffee",
   "scripts": {
+    "meanReversion": "node -r coffeescript/register -r esm test/strategy.coffee meanReversion",
+    "interval": "node -r coffeescript/register -r esm test/strategy.coffee interval",
     "test": "node -r coffeescript/register -r esm test/strategy.coffee meanReversion"
   },
   "repository": {
