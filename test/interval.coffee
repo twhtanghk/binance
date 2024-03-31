@@ -31,18 +31,23 @@ watch = ({broker, market, code}) ->
   combinaLatest [m5, m15]
     .pipe tap console.log
     .pipe filter (i) ->
-      # filter those history data
-      ret = moment()
-        .subtract minute: 2 * 15 
-        .isBefore moment.unix i[0].timestamp
-      if not ret
+      # filter m5 and m15 fall within range
+      ret = moment
+        .unix i[0]
+        .diff i[1], 'minute'
+      if not ret < 15
         console.log 
           m5: new Date i[0].timestamp
           m15: new Date i[1].timestamp
-      ret
+      ret < 15
     .pipe map (i) ->
       i[0].date = new Datei[0].timestamp
       i[0]
+   .pipe filter (i) ->
+      # filter those history data
+      moment()
+        .subtract minute: 2 * 5
+        .isBefore moment.unix i.timestamp
     .pipe concatMap (i) ->
       from do -> await account.position()
         .pipe map (pos) ->
