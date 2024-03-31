@@ -5,8 +5,8 @@ strategy = require('algotrader/rxStrategy').default
 {skipDup} = require('algotrader/analysis').default.ohlc
 import {combineLatest, from, concatMap, fromEvent, tap, map, filter} from 'rxjs'
 
-if process.argv.length != 3
-  console.log 'node -r coffeescript/register -r esm test/strategy meanReversion'
+if process.argv.length != 2
+  console.log 'node -r coffeescript/register -r esm test/interval'
   process.exit 1
 
 interval = ({broker, market, code, freq}) ->
@@ -21,7 +21,7 @@ interval = ({broker, market, code, freq}) ->
       market == i.market and code == i.code and freq == i.freq
     .pipe skipDup 'timestamp'
     .pipe strategy.indicator()
-    .pipe startegy.meanInversion()
+    .pipe strategy.meanInversion()
     .pipe filter (i) ->
       'entryExit' of i
 
