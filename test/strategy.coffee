@@ -55,7 +55,7 @@ watch = ({broker, market, code, freq, nShare}) ->
       price = quote[i.entryExit.side]
       ret = (i.entryExit.side == 'buy' and USDT > share) or (i.entryExit.side == 'sell' and ETH * price > share)
       if not ret
-        console.log "#{pos} #{ret}"
+        console.log "#{JSON.stringify pos} #{ret}"
       ret
     .pipe tap console.log
     .subscribe ({i, pos, quote}) ->

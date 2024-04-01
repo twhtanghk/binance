@@ -11,6 +11,7 @@ RUN  apt-get update \
 &&  rm -rf /var/lib/apt/lists/* \
 &&  npm config set fetch-retry-maxtimeout 6000000 \
 &&  npm config set fetch-retry-mintimeout 1000000 \
-&&  npm install
+&&  npm i \
+&&  (cd node_modules/binance; npm i axios@0.27.2)
 
 CMD npm test
