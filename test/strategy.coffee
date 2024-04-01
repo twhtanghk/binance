@@ -6,10 +6,10 @@ strategy = require('algotrader/rxStrategy').default
 import {from, concatMap, fromEvent, tap, map, filter} from 'rxjs'
 
 if process.argv.length != 3
-  console.log 'node -r coffeescript/register -r esm test/strategy meanReversion'
+  console.log 'node -r coffeescript/register -r esm test/strategy nShare'
   process.exit 1
 
-watch = ({broker, market, code, freq, selectedStrategy}) ->
+watch = ({broker, market, code, freq, nShare}) ->
   opts =
     market: market
     code: code
@@ -24,7 +24,7 @@ watch = ({broker, market, code, freq, selectedStrategy}) ->
       i.date = new Date i.timestamp * 1000
       i
     .pipe strategy.indicator()
-    .pipe strategy[selectedStrategy]()
+    .pipe strategy.meanReversion()
     .pipe filter (i) ->
       'entryExit' of i
     .pipe tap console.log
@@ -51,9 +51,12 @@ watch = ({broker, market, code, freq, selectedStrategy}) ->
       USDT ?= 0
       {buy, sell} = quote
       total = ETH * buy + USDT
-      share = total / 3
+      share = total / nShare
       price = quote[i.entryExit.side]
-      (i.entryExit.side == 'buy' and USDT > share) or (i.entryExit.side == 'sell' and ETH * price > share)
+      ret = (i.entryExit.side == 'buy' and USDT > share) or (i.entryExit.side == 'sell' and ETH * price > share)
+      if not ret
+        console.log "#{pos} #{ret}"
+      ret
     .pipe tap console.log
     .subscribe ({i, pos, quote}) ->
       {ETH, USDT} = pos
@@ -61,7 +64,7 @@ watch = ({broker, market, code, freq, selectedStrategy}) ->
       USDT ?= 0
       {buy, sell} = quote
       total = ETH * buy + USDT
-      share = total / 3
+      share = total / nShare
       price = quote[i.entryExit.side]
       params =
         code: opts.code
@@ -78,15 +81,15 @@ watch = ({broker, market, code, freq, selectedStrategy}) ->
 
 do ->
   try 
-    [..., selectedStrategy] = process.argv
+    [..., nShare] = process.argv
     market = 'crypto'
     code = 'ETHUSDT'
     freq = '5'
     broker = await new Binance()
-    subscription = await watch {broker, market, code, freq, selectedStrategy}
+    subscription = await watch {broker, market, code, freq, nShare}
     fromEvent broker.ws, 'reconnected'
       .subscribe ->
         subscription.unsubscribe()
-        subscription = await watch {broker, market, code, freq, selectedStrategy}
+        subscription = await watch {broker, market, code, freq, nShare}
   catch err
     console.error err
