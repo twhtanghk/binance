@@ -52,10 +52,11 @@ watch = ({broker, market, code, freq, nShare}) ->
       {buy, sell} = quote
       total = ETH * buy + USDT
       share = total / nShare
-      price = quote[i.entryExit.side]
-      ret = (i.entryExit.side == 'buy' and USDT > share) or (i.entryExit.side == 'sell' and ETH * price > share)
+      side = i.entryExit[0].side
+      price = quote[side]
+      ret = (side == 'buy' and USDT > share) or (side == 'sell' and ETH * price > share)
       if not ret
-        console.log "#{JSON.stringify pos} #{ret}"
+        console.log "#{JSON.stringify pos} #{share} #{nShare} #{ret}"
       ret
     .pipe tap console.log
     .subscribe ({i, pos, quote}) ->
@@ -65,10 +66,11 @@ watch = ({broker, market, code, freq, nShare}) ->
       {buy, sell} = quote
       total = ETH * buy + USDT
       share = total / nShare
-      price = quote[i.entryExit.side]
+      side = i.entryExit[0].side
+      price = quote[side]
       params =
         code: opts.code
-        side: i.entryExit.side
+        side: side
         type: 'limit'
         price: price
         qty: Math.floor(share * 1000 / price) / 1000
