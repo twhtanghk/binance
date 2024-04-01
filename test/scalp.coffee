@@ -3,7 +3,7 @@ moment = require 'moment'
 Binance = require('../index').default
 strategy = require('algotrader/rxStrategy').default
 {skipDup} = require('algotrader/analysis').default.ohlc
-import {from, concatMap, fromEvent, tap, map, filter} from 'rxjs'
+import {bufferCount, zip, concat, from, concatMap, fromEvent, tap, map, filter} from 'rxjs'
 
 if process.argv.length != 3
   console.log 'node -r coffeescript/register -r esm test/scalp nShare'
@@ -24,25 +24,52 @@ watch = ({broker, market, code, freq, nShare}) ->
       i.date = new Date i.timestamp * 1000
       i
     .pipe strategy.indicator()
-    .pipe filter (i) ->
-      i['close.stdev.stdev'] < 1
-    .pipe tap console.log
+  size = 20
   box = ohlc
-    .pipe bufferCount 20, 1
+    .pipe bufferCount size, 1
     .pipe map (i) ->
       [
-        _.maxyBy i, 'low'
-        _.maxBy i, 'high'
+        _.minBy(i, 'low').low
+        _.maxBy(i, 'high').high
       ]
-  zip ohlc, concat (new Array 19), box
-    .pipe tap console.log
-    .pipe filter (i) ->
+  zip ohlc, (concat (new Array size - 1), box)
+    .pipe map ([i, box]) ->
+      _.extend i, {box}
+    .pipe bufferCount 2, 1
+    .pipe filter ([prev, curr]) ->
+      curr['close.stdev.stdev'] < 1
+    .pipe filter ([prev, curr]) ->
+      # check if price breakout exists
+      ret = false
+      if prev['box']?
+        [low, high] = prev['box']
+        ret = curr['close'] < low or curr['close'] > high
+      ret
+    .pipe filter ([prev, curr]) ->
+      # check if volume increased
+      curr['volume.trend'] == 1
+    .pipe filter ([prev, curr]) ->
       # filter those history data
       moment()
         .subtract minute: 2 * 5
-        .isBefore moment.unix i.timestamp
-    .subscribe (i) ->
-      console.log i
+        .isBefore moment.unix curr.timestamp
+    .pipe map ([prev, curr]) ->
+      [low, high] = prev['box']
+      side = switch true
+        when curr['close'] < low then 'sell'
+        when curr['close'] > high then 'buy'
+      curr.entryExit ?= []
+      curr.entryExit.push
+        strategy: 'scalp'
+        side: side
+        plPrice: [
+          null
+          low
+        ]
+      [prev, curr]
+    .pipe tap console.log
+    .subscribe ([prev, curr]) ->
+      console.log curr
 ###
     .pipe concatMap (i) ->
       from do -> await account.position()
