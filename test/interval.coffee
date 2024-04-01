@@ -38,20 +38,23 @@ watch = ({broker, market, code}) ->
     .pipe filter (i) ->
       # filter m5 and m15 fall within range
       ret = moment
-        .unix i[0]
-        .diff i[1], 'minute'
+        .unix i[0].timestamp
+        .diff moment.unix(i[1].timestamp), 'minute'
+      ret = Math.abs ret
+      console.log "diff m5 m15: #{ret}"
       if not ret < 15
         console.log 
           m5: new Date i[0].timestamp * 1000
           m15: new Date i[1].timestamp * 1000
       ret < 15
     .pipe map (i) ->
-      i[0].date = new Date[0].timestamp * 1000
-      i[0]
+      if i[0].timestamp > i[1].timestamp then i[0] else i[1]
+    .pipe map (i) ->
+      _.extend i, date: new Date i.timestamp * 1000
    .pipe filter (i) ->
       # filter those history data
       moment()
-        .subtract minute: 2 * 5
+        .subtract minute: 2 * parseInt i.freq
         .isBefore moment.unix i.timestamp
     .pipe concatMap (i) ->
       from do -> await account.position()
@@ -83,7 +86,7 @@ watch = ({broker, market, code}) ->
       share = total / 3
       price = quote[i.entryExit.side]
       params =
-        code: opts.code
+        code: code
         side: i.entryExit.side
         type: 'limit'
         price: price
