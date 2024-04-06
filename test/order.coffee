@@ -26,6 +26,7 @@ do ->
           .pipe map (pos) ->
             {ETH, USDT} = pos
             pos = _.extend {}, 
+              date: x.date
               side: x.side
               qty: x.executedQty
               price: x.price
@@ -36,6 +37,7 @@ do ->
             {x, pos}
       .subscribe 
         next: ({x, pos}) ->
+          logger.debug JSON.stringify x
           ret.push pos
         complete: ->
           # view result by http://json2table.com/
