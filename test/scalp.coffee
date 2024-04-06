@@ -1,12 +1,15 @@
 _ = require 'lodash'
 moment = require 'moment'
+{createLogger} = require 'winston'
 Binance = require('../index').default
 strategy = require('algotrader/rxStrategy').default
 {skipDup} = require('algotrader/analysis').default.ohlc
 import {bufferCount, zip, concat, from, concatMap, fromEvent, tap, map, filter} from 'rxjs'
 
+logger = createLogger level: process.env.LEVEL || 'info'
+
 if process.argv.length != 3
-  console.log 'node -r coffeescript/register -r esm test/scalp nShare'
+  logger.error 'node -r coffeescript/register -r esm test/scalp nShare'
   process.exit 1
 
 watch = ({broker, market, code, freq, nShare}) ->
@@ -67,9 +70,9 @@ watch = ({broker, market, code, freq, nShare}) ->
           low
         ]
       [prev, curr]
-    .pipe tap console.log
+    .pipe tap logger.debug
     .subscribe ([prev, curr]) ->
-      console.log JSON.stringify curr
+      logger.info JSON.stringify curr
 ###
     .pipe concatMap (i) ->
       from do -> await account.position()
