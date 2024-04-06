@@ -16,7 +16,7 @@ do ->
     code = 'ETHUSDT'
     beginTime = moment().startOf 'month'
     endTime = moment()
-    i = 0
+    ret = []
     account = await broker.defaultAcc()
     (await account.historyOrder {code, beginTime, endTime})
       .pipe map (x) ->
@@ -34,8 +34,11 @@ do ->
                 ETH: USDT / x.price + ETH
                 USDT: ETH * x.price + USDT 
             {x, pos}
-      .subscribe ({x, pos}) ->
-        logger.debug JSON.stringify x, null, 2
-        logger.info "#{++i} #{JSON.stringify pos, null, 2}"
+      .subscribe 
+        next: ({x, pos}) ->
+          ret.push pos
+        complete: ->
+          # view result by http://json2table.com/
+          logger.info JSON.stringify ret
   catch err
     console.error err
