@@ -69,7 +69,7 @@ watch = ({broker, market, code, freq, nShare}) ->
       [prev, curr]
     .pipe tap console.log
     .subscribe ([prev, curr]) ->
-      console.log curr
+      console.log JSON.stringify curr
 ###
     .pipe concatMap (i) ->
       from do -> await account.position()
