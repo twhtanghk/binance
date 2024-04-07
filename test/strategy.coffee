@@ -33,7 +33,7 @@ watch = ({broker, market, code, freq, nShare}) ->
     .pipe strategy.meanReversion()
     .pipe filter (i) ->
       'entryExit' of i
-    .pipe tap logger.debug
+    .pipe tap (x) -> logger.debug x
     .pipe filter (i) ->
       # filter those history data
       moment()
@@ -64,7 +64,7 @@ watch = ({broker, market, code, freq, nShare}) ->
       if not ret
         logger.info "#{JSON.stringify pos} #{share} #{nShare} #{ret}"
       ret
-    .pipe tap logger.debug
+    .pipe tap (x) -> logger.debug x
     .subscribe ({i, pos, quote}) ->
       {ETH, USDT} = pos
       ETH ?= 0
