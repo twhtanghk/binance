@@ -3,10 +3,16 @@ moment = require 'moment'
 Binance = require('../index').default
 strategy = require('algotrader/rxStrategy').default
 {skipDup} = require('algotrader/analysis').default.ohlc
+{createLogger} = winston = require 'winston'
 import {from, concatMap, fromEvent, tap, map, filter} from 'rxjs'
 
+logger = createLogger
+  level: process.env.LEVEL || 'info'
+  format: winston.format.simple()
+  transports: [ new winston.transports.Console() ]
+
 if process.argv.length != 3
-  console.log 'node -r coffeescript/register -r esm test/strategy nShare'
+  logger.error 'node -r coffeescript/register -r esm test/strategy nShare'
   process.exit 1
 
 watch = ({broker, market, code, freq, nShare}) ->
@@ -27,7 +33,7 @@ watch = ({broker, market, code, freq, nShare}) ->
     .pipe strategy.meanReversion()
     .pipe filter (i) ->
       'entryExit' of i
-    .pipe tap console.log
+    .pipe tap logger.debug
     .pipe filter (i) ->
       # filter those history data
       moment()
@@ -56,9 +62,9 @@ watch = ({broker, market, code, freq, nShare}) ->
       price = quote[side]
       ret = (side == 'buy' and USDT > share) or (side == 'sell' and ETH * price > share)
       if not ret
-        console.log "#{JSON.stringify pos} #{share} #{nShare} #{ret}"
+        logger.info "#{JSON.stringify pos} #{share} #{nShare} #{ret}"
       ret
-    .pipe tap console.log
+    .pipe tap logger.debug
     .subscribe ({i, pos, quote}) ->
       {ETH, USDT} = pos
       ETH ?= 0
@@ -74,12 +80,12 @@ watch = ({broker, market, code, freq, nShare}) ->
         type: 'limit'
         price: price
         qty: Math.floor(share * 1000 / price) / 1000
-      console.log params
+      logger.info params
       try
         index = await account.placeOrder params
         await account.enableOrder index
       catch err
-        console.error err
+        logger.error err
 
 do ->
   try 
@@ -94,4 +100,4 @@ do ->
         subscription.unsubscribe()
         subscription = await watch {broker, market, code, freq, nShare}
   catch err
-    console.error err
+    logger.error err
