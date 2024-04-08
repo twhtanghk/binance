@@ -1,6 +1,6 @@
 _ = require 'lodash'
 moment = require 'moment'
-{createLogger} = require 'winston'
+{format, transports, createLogger} = require 'winston'
 Binance = require('../index').default
 strategy = require('algotrader/rxStrategy').default
 {skipDup} = require('algotrader/analysis').default.ohlc
