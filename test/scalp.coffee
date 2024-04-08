@@ -43,16 +43,19 @@ watch = ({broker, market, code, freq, nShare}) ->
       _.extend i, {box}
     .pipe bufferCount 2, 1
     .pipe filter ([prev, curr]) ->
+      logger.debug "close.stdev.stdev: #{curr['close.stdev.stdev']}"
       curr['close.stdev.stdev'] < 1
     .pipe filter ([prev, curr]) ->
       # check if price breakout exists
       ret = false
       if prev['box']?
         [low, high] = prev['box']
+        logger.debug "box: #{[low, high]}"
         ret = curr['close'] < low or curr['close'] > high
       ret
     .pipe filter ([prev, curr]) ->
       # check if volume increased
+      logger.debug "volume.trend: #{curr['volume.trend']}"
       curr['volume.trend'] == 1
     .pipe filter ([prev, curr]) ->
       # filter those history data
@@ -76,7 +79,6 @@ watch = ({broker, market, code, freq, nShare}) ->
     .pipe tap (x) -> logger.debug JSON.stringify x
     .subscribe ([prev, curr]) ->
       logger.info JSON.stringify curr
-###
     .pipe concatMap (i) ->
       from do -> await account.position()
         .pipe map (pos) ->
@@ -95,8 +97,7 @@ watch = ({broker, market, code, freq, nShare}) ->
       side = i.entryExit[0].side
       price = quote[side]
       ret = (side == 'buy' and USDT > share) or (side == 'sell' and ETH * price > share)
-      if not ret
-        console.log "#{JSON.stringify pos} #{share} #{nShare} #{ret}"
+      logger.debug "#{JSON.stringify pos} #{share} #{nShare} #{ret}"
       ret
     .pipe tap console.log
     .subscribe ({i, pos, quote}) ->
@@ -114,7 +115,8 @@ watch = ({broker, market, code, freq, nShare}) ->
         type: 'limit'
         price: price
         qty: Math.floor(share * 1000 / price) / 1000
-      console.log params
+      logger.debug JSON.stringify params
+###
       try
         index = await account.placeOrder params
         await account.enableOrder index
