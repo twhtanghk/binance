@@ -6,7 +6,10 @@ strategy = require('algotrader/rxStrategy').default
 {skipDup} = require('algotrader/analysis').default.ohlc
 import {bufferCount, zip, concat, from, concatMap, fromEvent, tap, map, filter} from 'rxjs'
 
-logger = createLogger level: process.env.LEVEL || 'info'
+logger = createLogger
+  level: process.env.LEVEL || 'info'
+  format: format.combine format.timestamp(), format.simple()
+  transports: [ new transports.Console() ]
 
 if process.argv.length != 3
   logger.error 'node -r coffeescript/register -r esm test/scalp nShare'
@@ -70,7 +73,7 @@ watch = ({broker, market, code, freq, nShare}) ->
           low
         ]
       [prev, curr]
-    .pipe tap logger.debug
+    .pipe tap (x) -> logger.debug JSON.stringify x
     .subscribe ([prev, curr]) ->
       logger.info JSON.stringify curr
 ###
