@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.coffee",
   "scripts": {
+    "stat": "node -r coffeescript/register -r esm test/stat.coffee",
     "scalp": "node -r coffeescript/register -r esm test/scalp.coffee 5",
     "meanReversion": "node -r coffeescript/register -r esm test/strategy.coffee 5",
     "interval": "node -r coffeescript/register -r esm test/interval.coffee",
