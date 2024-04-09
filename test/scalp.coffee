@@ -44,7 +44,7 @@ watch = ({broker, market, code, freq, nShare}) ->
     .pipe bufferCount 2, 1
     .pipe filter ([prev, curr]) ->
       logger.debug "close.stdev.stdev: #{curr['close.stdev.stdev']}"
-      curr['close.stdev.stdev'] < 1
+      curr['close.stdev.stdev'] < 1.1
     .pipe filter ([prev, curr]) ->
       # check if price breakout exists
       ret = false
@@ -77,8 +77,6 @@ watch = ({broker, market, code, freq, nShare}) ->
         ]
       [prev, curr]
     .pipe tap (x) -> logger.debug JSON.stringify x
-    .subscribe ([prev, curr]) ->
-      logger.info JSON.stringify curr
     .pipe concatMap (i) ->
       from do -> await account.position()
         .pipe map (pos) ->
