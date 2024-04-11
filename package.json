@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.coffee",
   "scripts": {
+    "meanVol": "node -r coffeescript/register -r esm test/meanVol.coffee 5 5",
     "backtest": "node -r coffeescript/register -r esm test/backtest.coffee 5",
     "stat": "node -r coffeescript/register -r esm test/stat.coffee",
     "scalp": "node -r coffeescript/register -r esm test/scalp.coffee 5",
