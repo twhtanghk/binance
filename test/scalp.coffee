@@ -63,7 +63,7 @@ decision = ({market, code, ohlc, account}) ->
         strategy: 'scalp'
         side: side
         plPrice: [
-          curr.close * (if side == 'buy' then 1 + plRatio[1] else 1 - plRatio[0])
+          curr.close * (if side == 'buy' then 1 + plRatio[0] else 1 - plRatio[0])
           if side == 'buy' then low else high
         ]
       curr
