@@ -67,21 +67,6 @@ decision = ({market, code, ohlc, account}) ->
           if side == 'buy' then low else high
         ]
       curr
-    .pipe concatMap (i) ->
-      from do -> await account.position()
-        .pipe map (pos) ->
-          {i, pos}
-    .pipe filter ({i, pos}) ->
-      {ETH, USDT} = pos
-      ETH ?= 0
-      USDT ?= 0
-      total = ETH * i.close + USDT
-      share = total / nShare
-      side = i.entryExit[0].side
-      price = i.close
-      ret = (side == 'buy' and USDT > share) or (side == 'sell' and ETH * price > share)
-      logger.debug "#{JSON.stringify pos} #{share} #{nShare} #{ret}"
-      ret
 
 backtest = ({broker, market, code, freq}) ->
   opts =
@@ -104,7 +89,7 @@ watch = ({broker, market, code, freq}) ->
     code: code
     start: moment().subtract minute: 60 * parseInt freq
     freq: freq
-  ohlc = await broker.dataKL opts
+  ohlc = (await broker.dataKL opts)
     .pipe filter (i) ->
       market == i.market and code == i.code and freq == i.freq
   account = await broker.defaultAcc()
@@ -114,6 +99,21 @@ watch = ({broker, market, code, freq}) ->
       moment()
         .subtract minute: 2 * 5
         .isBefore moment.unix curr.timestamp
+    .pipe concatMap (i) ->
+      from do -> await account.position()
+        .pipe map (pos) ->
+          {i, pos}
+    .pipe filter ({i, pos}) ->
+      {ETH, USDT} = pos
+      ETH ?= 0
+      USDT ?= 0
+      total = ETH * i.close + USDT
+      share = total / nShare
+      side = i.entryExit[0].side
+      price = i.close
+      ret = (side == 'buy' and USDT > share) or (side == 'sell' and ETH * price > share)
+      logger.debug "#{JSON.stringify pos} #{share} #{nShare} #{ret}"
+      ret
     .subscribe ({i, pos}) ->
       {ETH, USDT} = pos
       ETH ?= 0
