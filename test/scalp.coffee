@@ -4,7 +4,7 @@ moment = require 'moment'
 Binance = require('../index').default
 strategy = require('algotrader/rxStrategy').default
 {skipDup} = require('algotrader/analysis').default.ohlc
-import {bufferCount, zip, concat, from, concatMap, fromEvent, tap, map, filter} from 'rxjs'
+import {skipLast, bufferCount, zip, concat, from, concatMap, fromEvent, tap, map, filter} from 'rxjs'
 
 logger = createLogger
   level: process.env.LEVEL || 'info'
@@ -19,13 +19,12 @@ nShare = parseInt process.env.NSHARE
 plRatio = JSON.parse process.env.PLRATIO
 
 decision = ({market, code, ohlc, account}) ->
-  ohlc
+  ohlc = ohlc
     .pipe skipDup 'timestamp'
     .pipe map (i) ->
       i.date = new Date i.timestamp * 1000
       i
     .pipe strategy.indicator()
-    .pipe tap (x) -> logger.debug JSON.stringify x
   size = 20
   box = ohlc
     .pipe bufferCount size, 1
@@ -38,6 +37,7 @@ decision = ({market, code, ohlc, account}) ->
     .pipe map ([i, box]) ->
       _.extend i, {box}
     .pipe bufferCount 2, 1
+    .pipe skipLast 1
     .pipe filter ([prev, curr]) ->
       logger.debug "close.stdev.stdev: #{curr['close.stdev.stdev']}"
       curr['close.stdev.stdev'] < 1.1
@@ -63,8 +63,8 @@ decision = ({market, code, ohlc, account}) ->
         strategy: 'scalp'
         side: side
         plPrice: [
-          null
-          low
+          curr.close * (if side == 'buy' then 1 + plRatio[1] else 1 - plRatio[0])
+          if side == 'buy' then low else high
         ]
       [prev, curr]
     .pipe tap (x) -> logger.debug JSON.stringify x
@@ -72,19 +72,14 @@ decision = ({market, code, ohlc, account}) ->
       from do -> await account.position()
         .pipe map (pos) ->
           {i, pos}
-    .pipe concatMap ({i, pos}) ->
-      from do -> await broker.quickQuote {market, code}
-        .pipe map (quote) ->
-          {i, pos, quote}
-    .pipe filter ({i, pos, quote}) ->
+    .pipe filter ({i, pos}) ->
       {ETH, USDT} = pos
       ETH ?= 0
       USDT ?= 0
-      {buy, sell} = quote
-      total = ETH * buy + USDT
+      total = ETH * i.close + USDT
       share = total / nShare
       side = i.entryExit[0].side
-      price = quote[side]
+      price = i.close
       ret = (side == 'buy' and USDT > share) or (side == 'sell' and ETH * price > share)
       logger.debug "#{JSON.stringify pos} #{share} #{nShare} #{ret}"
       ret
@@ -96,13 +91,13 @@ backtest = ({broker, market, code, freq}) ->
     start: moment().subtract week: 1
     end: moment()
     freq: freq
-  ohlc = await broker.historyKL opts
+  ohlc = (await broker.historyKL opts)
     .pipe filter (i) ->
       market == i.market and code == i.code and freq == i.freq
   account = await broker.defaultAcc()  
   decision {market, code, ohlc, account}
     .subscribe (x) ->
-      logger.debug JSON.stringify x, null, 2
+      logger.info JSON.stringify x, null, 2
 
 watch = ({broker, market, code, freq}) ->
   opts =
@@ -120,15 +115,14 @@ watch = ({broker, market, code, freq}) ->
       moment()
         .subtract minute: 2 * 5
         .isBefore moment.unix curr.timestamp
-    .subscribe ({i, pos, quote}) ->
+    .subscribe ({i, pos}) ->
       {ETH, USDT} = pos
       ETH ?= 0
       USDT ?= 0
-      {buy, sell} = quote
-      total = ETH * buy + USDT
+      total = ETH * i.close + USDT
       share = total / nShare
       side = i.entryExit[0].side
-      price = quote[side]
+      price = i.close
       params =
         code: opts.code
         side: side
