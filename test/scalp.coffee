@@ -66,8 +66,7 @@ decision = ({market, code, ohlc, account}) ->
           curr.close * (if side == 'buy' then 1 + plRatio[1] else 1 - plRatio[0])
           if side == 'buy' then low else high
         ]
-      [prev, curr]
-    .pipe tap (x) -> logger.debug JSON.stringify x
+      curr
     .pipe concatMap (i) ->
       from do -> await account.position()
         .pipe map (pos) ->
