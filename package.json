@@ -7,7 +7,7 @@
     "meanVol": "node -r coffeescript/register -r esm test/meanVol.coffee 5 5",
     "backtest": "node -r coffeescript/register -r esm test/backtest.coffee 5",
     "stat": "node -r coffeescript/register -r esm test/stat.coffee",
-    "scalp": "node -r coffeescript/register -r esm test/scalp.coffee 5",
+    "scalp.backtest": "node -r coffeescript/register -r esm test/scalp.coffee backtest 5",
     "meanReversion": "node -r coffeescript/register -r esm test/strategy.coffee 5",
     "interval": "node -r coffeescript/register -r esm test/interval.coffee",
     "test": "node -r coffeescript/register -r esm test/strategy.coffee 5"

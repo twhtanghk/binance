@@ -11,25 +11,21 @@ logger = createLogger
   format: format.combine format.timestamp(), format.simple()
   transports: [ new transports.Console() ]
 
-if process.argv.length != 3
-  logger.error 'node -r coffeescript/register -r esm test/scalp nShare'
+if process.argv.length != 4
+  logger.error 'node -r coffeescript/register -r esm test/scalp backtest|watch freq'
   process.exit 1
 
-watch = ({broker, market, code, freq, nShare}) ->
-  opts =
-    market: market
-    code: code
-    start: moment().subtract minute: 60 * parseInt freq
-    freq: freq
-  account = await broker.defaultAcc()
-  ohlc = (await broker.dataKL opts)
-    .pipe filter (i) ->
-      market == i.market and code == i.code and freq == i.freq
+nShare = parseInt process.env.NSHARE
+plRatio = JSON.parse process.env.PLRATIO
+
+decision = ({market, code, ohlc, account}) ->
+  ohlc
     .pipe skipDup 'timestamp'
     .pipe map (i) ->
       i.date = new Date i.timestamp * 1000
       i
     .pipe strategy.indicator()
+    .pipe tap (x) -> logger.debug JSON.stringify x
   size = 20
   box = ohlc
     .pipe bufferCount size, 1
@@ -57,11 +53,6 @@ watch = ({broker, market, code, freq, nShare}) ->
       # check if volume increased
       logger.debug "volume.trend: #{curr['volume.trend']}"
       curr['volume.trend'] == 1
-    .pipe filter ([prev, curr]) ->
-      # filter those history data
-      moment()
-        .subtract minute: 2 * 5
-        .isBefore moment.unix curr.timestamp
     .pipe map ([prev, curr]) ->
       [low, high] = prev['box']
       side = switch true
@@ -97,7 +88,38 @@ watch = ({broker, market, code, freq, nShare}) ->
       ret = (side == 'buy' and USDT > share) or (side == 'sell' and ETH * price > share)
       logger.debug "#{JSON.stringify pos} #{share} #{nShare} #{ret}"
       ret
-    .pipe tap console.log
+
+backtest = ({broker, market, code, freq}) ->
+  opts =
+    market: market
+    code: code
+    start: moment().subtract week: 1
+    end: moment()
+    freq: freq
+  ohlc = await broker.historyKL opts
+    .pipe filter (i) ->
+      market == i.market and code == i.code and freq == i.freq
+  account = await broker.defaultAcc()  
+  decision {market, code, ohlc, account}
+    .subscribe (x) ->
+      logger.debug JSON.stringify x, null, 2
+
+watch = ({broker, market, code, freq}) ->
+  opts =
+    market: market
+    code: code
+    start: moment().subtract minute: 60 * parseInt freq
+    freq: freq
+  ohlc = await broker.dataKL opts
+    .pipe filter (i) ->
+      market == i.market and code == i.code and freq == i.freq
+  account = await broker.defaultAcc()
+  decision {market, code, ohlc, account}
+    .pipe filter ([prev, curr]) ->
+      # filter those history data
+      moment()
+        .subtract minute: 2 * 5
+        .isBefore moment.unix curr.timestamp
     .subscribe ({i, pos, quote}) ->
       {ETH, USDT} = pos
       ETH ?= 0
@@ -124,15 +146,15 @@ watch = ({broker, market, code, freq, nShare}) ->
 
 do ->
   try 
-    [..., nShare] = process.argv
+    [..., action, freq] = process.argv
     market = 'crypto'
     code = 'ETHUSDT'
     freq = '5'
     broker = await new Binance()
-    subscription = await watch {broker, market, code, freq, nShare}
+    subscription = await {backtest, watch}[action] {broker, market, code, freq}
     fromEvent broker.ws, 'reconnected'
       .subscribe ->
         subscription.unsubscribe()
-        subscription = await watch {broker, market, code, freq, nShare}
+        subscription = await {backtest, watch}[action] {broker, market, code, freq}
   catch err
     console.error err

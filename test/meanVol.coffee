@@ -58,13 +58,11 @@ watch = ({broker, market, code, freq, nShare}) ->
       logger.debug JSON.stringify pos, null, 2
       logger.debug JSON.stringify quote, null, 2
       logger.debug JSON.stringify params, null, 2
-###
       try
         index = await account.placeOrder params
         await account.enableOrder index
       catch err
         console.error err
-###
 
 do ->
   try 
