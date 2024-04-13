@@ -39,7 +39,7 @@ decision = ({market, code, ohlc, account}) ->
     .pipe bufferCount 2, 1
     .pipe skipLast 1
     .pipe filter ([prev, curr]) ->
-      logger.debug "close.stdev.stdev: #{curr['close.stdev.stdev']}"
+      logger.debug JSON.stringify _.pick curr, ['close.stdev.stdev', 'date']
       curr['close.stdev.stdev'] < 1.1
     .pipe filter ([prev, curr]) ->
       # check if price breakout exists
@@ -94,11 +94,11 @@ watch = ({broker, market, code, freq}) ->
       market == i.market and code == i.code and freq == i.freq
   account = await broker.defaultAcc()
   decision {market, code, ohlc, account}
-    .pipe filter ([prev, curr]) ->
+    .pipe filter (i) ->
       # filter those history data
       moment()
         .subtract minute: 2 * 5
-        .isBefore moment.unix curr.timestamp
+        .isBefore moment.unix i.timestamp
     .pipe concatMap (i) ->
       from do -> await account.position()
         .pipe map (pos) ->
