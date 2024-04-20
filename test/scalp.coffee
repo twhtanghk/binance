@@ -30,7 +30,7 @@ cook = (raw) ->
         _.minBy(i, 'low').low
         _.maxBy(i, 'high').high
       ]
-  zip ret, (concat (new Array size - 1), box)
+  zip ret, (concat (from new Array size - 1), box)
     .pipe map ([i, box]) ->
       _.extend i, {box}
 
@@ -40,12 +40,12 @@ decision = ({market, code, ohlc, account}) ->
       i.date = new Date i.timestamp * 1000
       i
   cooked = cook raw
-  combineLatest [cooked, raw]
+  zip [cooked, raw]
     .pipe filter ([prev, curr]) ->
       ret = false
       if prev.box?
         [low, high] = prev.box
-        ret = high - low < 25
+        ret = high - low < 15
       ret
     .pipe tap (x) -> logger.debug JSON.stringify x, null, 2
     .pipe filter ([prev, curr]) ->
