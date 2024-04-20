@@ -14,7 +14,7 @@ do ->
     broker = await new Binance()
 
     code = 'ETHUSDT'
-    beginTime = moment().startOf 'month'
+    beginTime = moment().subtract week: 1
     endTime = moment()
     ret = []
     account = await broker.defaultAcc()
@@ -37,10 +37,19 @@ do ->
             {x, pos}
       .subscribe 
         next: ({x, pos}) ->
-          logger.debug JSON.stringify x
+          logger.debug JSON.stringify x, null, 2
           ret.push pos
         complete: ->
           # view result by http://json2table.com/
-          logger.info JSON.stringify ret
+          logger.info JSON.stringify ret, null, 2
+          [minUSDT, minETH] = [
+            _.minBy ret, ({sum}) -> sum.USDT
+            _.minBy ret, ({sum}) -> sum.ETH
+          ]
+          [maxUSDT, maxETH] = [
+            _.maxBy ret, ({sum}) -> sum.USDT
+            _.maxBy ret, ({sum}) -> sum.ETH
+          ]
+          logger.info JSON.stringify {minUSDT, maxUSDT, minETH, maxETH}, null, 2
   catch err
     console.error err
