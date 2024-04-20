@@ -4,7 +4,7 @@ moment = require 'moment'
 Binance = require('../index').default
 strategy = require('algotrader/rxStrategy').default
 {skipDup} = require('algotrader/analysis').default.ohlc
-import {skipLast, bufferCount, zip, concat, from, concatMap, fromEvent, tap, map, filter} from 'rxjs'
+import {combineLatest, skipLast, bufferCount, zip, concat, from, concatMap, fromEvent, tap, map, filter} from 'rxjs'
 
 logger = createLogger
   level: process.env.LEVEL || 'info'
@@ -18,29 +18,36 @@ if process.argv.length != 4
 nShare = parseInt process.env.NSHARE
 plRatio = JSON.parse process.env.PLRATIO
 
-decision = ({market, code, ohlc, account}) ->
-  ohlc = ohlc
+cook = (raw) ->
+  ret = raw 
     .pipe skipDup 'timestamp'
-    .pipe map (i) ->
-      i.date = new Date i.timestamp * 1000
-      i
     .pipe strategy.indicator()
   size = 20
-  box = ohlc
+  box = ret
     .pipe bufferCount size, 1
     .pipe map (i) ->
       [
         _.minBy(i, 'low').low
         _.maxBy(i, 'high').high
       ]
-  zip ohlc, (concat (new Array size - 1), box)
+  zip ret, (concat (new Array size - 1), box)
     .pipe map ([i, box]) ->
       _.extend i, {box}
-    .pipe bufferCount 2, 1
-    .pipe skipLast 1
+
+decision = ({market, code, ohlc, account}) ->
+  raw = ohlc
+    .pipe map (i) ->
+      i.date = new Date i.timestamp * 1000
+      i
+  cooked = cook raw
+  combineLatest [cooked, raw]
     .pipe filter ([prev, curr]) ->
-      logger.debug JSON.stringify _.pick curr, ['close.stdev.stdev', 'date']
-      curr['close.stdev.stdev'] < 1.1
+      ret = false
+      if prev.box?
+        [low, high] = prev.box
+        ret = high - low < 25
+      ret
+    .pipe tap (x) -> logger.debug JSON.stringify x, null, 2
     .pipe filter ([prev, curr]) ->
       # check if price breakout exists
       ret = false
