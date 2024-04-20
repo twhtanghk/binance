@@ -96,13 +96,17 @@ watch = ({broker, market, code, freq}) ->
   decision {market, code, ohlc, account}
     .pipe filter (i) ->
       # filter those history data
-      moment()
-        .subtract minute: 2 * 5
+      ret = moment()
+        .subtract minute: 2 * parseInt freq
         .isBefore moment.unix i.timestamp
+      logger.debug _.pick i, ['date']
+      ret
     .pipe concatMap (i) ->
       from do -> await account.position()
         .pipe map (pos) ->
           {i, pos}
+    .pipe tap (x) ->
+      logger.debug JSON.stringify x, null, 2
     .pipe filter ({i, pos}) ->
       {ETH, USDT} = pos
       ETH ?= 0
