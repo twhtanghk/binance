@@ -58,8 +58,8 @@ decision = ({market, code, ohlc, account}) ->
       ret
     .pipe filter ([prev, curr]) ->
       # check if volume increased
-      logger.debug "volume.trend: #{curr['volume.trend']}"
-      curr['volume.trend'] == 1
+      logger.debug "volume [curr, prev]: #{curr['volume']} #{prev['volume']}"
+      curr['volume'] > 2 * prev['volume']
     .pipe map ([prev, curr]) ->
       [low, high] = prev['box']
       side = switch true
