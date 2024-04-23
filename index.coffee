@@ -159,7 +159,7 @@ class Binance extends Broker
         market: 'crypto'
         code: code
         freq: freq
-        timestamp: k.t / 1000
+        timestamp: k.T / 1000
         high: parseFloat k.h
         low: parseFloat k.l
         open: parseFloat k.o

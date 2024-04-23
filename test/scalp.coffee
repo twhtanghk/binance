@@ -37,15 +37,14 @@ cook = (raw) ->
 decision = ({market, code, ohlc, account}) ->
   raw = ohlc
     .pipe map (i) ->
-      i.date = new Date i.timestamp * 1000
-      i
+      _.extend i, date: moment.unix i.timestamp
   cooked = cook raw
-  zip [cooked, raw]
+  combineLatest [cooked, raw]
     .pipe filter ([prev, curr]) ->
       ret = false
       if prev.box?
         [low, high] = prev.box
-        ret = high - low < 15
+        ret = high - low < close * 0.5 / 100 # less than 0.5% of close price
       ret
     .pipe tap (x) -> logger.debug JSON.stringify x, null, 2
     .pipe filter ([prev, curr]) ->
@@ -102,11 +101,12 @@ watch = ({broker, market, code, freq}) ->
   account = await broker.defaultAcc()
   decision {market, code, ohlc, account}
     .pipe filter (i) ->
+      logger.debug JSON.stringify (_.pick i, ['date']), null, 2
+      logger.debug moment.unix i.timestamp
       # filter those history data
       ret = moment()
         .subtract minute: 2 * parseInt freq
         .isBefore moment.unix i.timestamp
-      logger.debug _.pick i, ['date']
       ret
     .pipe concatMap (i) ->
       from do -> await account.position()
@@ -156,9 +156,5 @@ do ->
     freq = '5'
     broker = await new Binance()
     subscription = await {backtest, watch}[action] {broker, market, code, freq}
-    fromEvent broker.ws, 'reconnected'
-      .subscribe ->
-        subscription.unsubscribe()
-        subscription = await {backtest, watch}[action] {broker, market, code, freq}
   catch err
     console.error err
