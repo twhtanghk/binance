@@ -15,7 +15,7 @@ do ->
       .pipe skipDup 'timestamp'
       .pipe map (x) ->
         _.extend x, date: moment.unix x.timestamp
-      .pipe find.level() 
+      .pipe find.volUp() 
       .subscribe console.log
   catch err
     console.error err
