@@ -24,6 +24,7 @@ do ->
         curr['box'][2] < 0.5 and 
         ((_.find prev['entry'], id: 'level.support')? or
         (_.find prev['exit'], id: 'level.resistance')?)
-      .subscribe console.log
+      .subscribe (x) ->
+        console.log JSON.stringify x, null, 2
   catch err
     console.error err
