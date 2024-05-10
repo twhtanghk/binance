@@ -36,6 +36,7 @@ do ->
         else if o.close > b[1]
           o.entry ?= []
           o.exit.push {id: 'boxBreakout', side: 'buy', price: o.close}
+        [o, b, v]
       .subscribe (x) ->
         console.log JSON.stringify x, null, 2
   catch err
