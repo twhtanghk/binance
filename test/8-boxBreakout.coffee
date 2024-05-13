@@ -26,17 +26,20 @@ do ->
       .pipe filter (x) ->
         x['volume.trend'] == 1
 
-    (combineLatest ohlc, box, volUp)
-      .pipe filter ([o, b, v]) ->
-        b.timestamp <= v.timestamp
-      .pipe map ([o, b, v]) ->
-        if o.close < b[0]
-          o.exit ?= []
-          o.exit.push {id: 'boxBreakout', side: 'sell', price: o.close}
-        else if o.close > b[1]
-          o.entry ?= []
-          o.exit.push {id: 'boxBreakout', side: 'buy', price: o.close}
-        [o, b, v]
+    (combineLatest box, volUp)
+      .pipe filter ([b, v]) ->
+        b.timestamp <= v.timestamp and v.timestamp - b.timestmap < 120 # 2 min
+      .pipe map ([b, v]) ->
+        if v.close < b.box[0]
+          v.exit ?= []
+          v.exit.push {id: 'boxBreakout', side: 'sell', price: v.close}
+        else if v.close > b.box[1]
+          v.entry ?= []
+          v.entry.push {id: 'boxBreakout', side: 'buy', price: v.close}
+        [b, v]
+      .pipe filter ([b, v]) ->
+        ((_.find v['entry'], id: 'boxBreakout')? or
+        (_.find v['exit'], id: 'boxBreakout')?)
       .subscribe (x) ->
         console.log JSON.stringify x, null, 2
   catch err
