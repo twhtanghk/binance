@@ -32,7 +32,7 @@ do ->
         ((_.find x['entry'], id: 'level.support')? or
         (_.find x['exit'], id: 'level.resistance')?)
         
-    (combineLatest box, level, volUp)
+    (combineLatest [box, level, volUp])
       .pipe filter ([b, l, v]) ->
         b.timestamp <= l.timestamp and l.timestamp <= v.timestamp
       .subscribe (x) ->

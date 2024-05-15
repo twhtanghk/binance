@@ -26,9 +26,9 @@ do ->
       .pipe filter (x) ->
         x['volume.trend'] == 1
 
-    (combineLatest box, volUp)
+    (combineLatest [box, volUp])
       .pipe filter ([b, v]) ->
-        b.timestamp <= v.timestamp and v.timestamp - b.timestmap < 120 # 2 min
+        b.timestamp <= v.timestamp and v.timestamp - b.timestmap <= 120 # 2 min
       .pipe map ([b, v]) ->
         if v.close < b.box[0]
           v.exit ?= []
