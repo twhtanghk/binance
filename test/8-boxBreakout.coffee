@@ -24,7 +24,7 @@ do ->
     volUp = ohlc
       .pipe find.volUp() 
       .pipe filter (x) ->
-        x['volume.trend'] == 1
+        x['volume'] > x['volume.mean'] * 2
 
     (combineLatest [box, volUp])
       .pipe filter ([b, v]) ->
