@@ -3,7 +3,7 @@ moment = require 'moment'
 {find} = require('algotrader/rxStrategy').default 
 {skipDup} = require('algotrader/analysis').default.ohlc
 Binance = require('../index').default
-import {combineLatest, distinct, bufferCount, map, filter, tap} from 'rxjs'
+import {combineLatest, bufferCount, map, filter, tap} from 'rxjs'
 
 do ->
   try
@@ -11,8 +11,7 @@ do ->
     code = 'ETHUSDT'
 
     ohlc = (await broker.dataKL {code: code, start: moment().subtract(day: 7), freq: '1'})
-      .pipe distinct (x) ->
-        x.timestamp
+      .pipe skipDup 'timestamp'
       .pipe map (x) ->
         _.extend x, date: moment.unix x.timestamp
 
