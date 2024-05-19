@@ -28,21 +28,15 @@ do ->
         x
       .pipe filter (x) ->
         x.enter? or x.exit?
-      .pipe tap (x) ->
-        console.log 'mean'
-        console.log JSON.stringify x, null, 2
 
     volUp = ohlc
       .pipe find.volUp() 
       .pipe filter (x) ->
         x['volume'] > x['volume.mean'] * 2
-      .pipe tap (x) ->
-        console.log 'volUp'
-        console.log JSON.stringify x, null, 2
 
     (combineLatest [mean, volUp])
       .pipe filter ([m, v]) ->
-        m.timestamp <= v.timestamp and v.timestamp - m.timestamp <= 120 # 2 min
+        m.timestamp == v.timestamp
       .subscribe (x) ->
         console.log JSON.stringify x, null, 2
   catch err
