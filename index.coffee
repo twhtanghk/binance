@@ -6,7 +6,13 @@ import {EventEmitter} from 'events'
 import {readFile} from 'fs/promises'
 import {MainClient, WebsocketClient} from 'binance'
 {Broker, freqDuration} = AlgoTrader = require('algotrader/rxData').default
+{createLogger} = winston = require 'winston'
 import {concat, tap, map, from, filter, fromEvent} from 'rxjs'
+
+logger = createLogger
+  level: process.env.LEVEL || 'info'
+  format: winston.format.simple()
+  transports: [ new winston.transports.Console() ]
 
 class Order extends AlgoTrader.Order
   @SIDE:
@@ -79,7 +85,7 @@ class Account extends AlgoTrader.Account
     {code, id} = _.find @orderList, {id}
     await @broker.client.cancelOrder {symbol: code, orderId: id}
 
-class Binance extends Broker
+export class Binance extends Broker
   @api_key: process.env.BINANCE_API_KEY
   @rsa_key: do ->
     (await readFile process.env.BINANCE_RSA_KEY).toString()
@@ -193,3 +199,49 @@ class Binance extends Broker
           {price, volume}
 
 export default Binance
+
+export position = (account, pair, entryExit, nShare) -> (obs) ->
+  obs
+    .pipe concatMap (x) ->
+      from do -> await account.position()
+        .pipe map (pos) ->
+          [x, pos]
+    .pipe filter ([x, pos]) ->
+      bal = [
+        pos[pair[0]] || 0
+        pos[pair[1]] || 0
+      ]
+      {side, price} = entryExit
+      total = bal[0] * price + bal[1]
+      share = total / nShare
+      ret = (side == 'buy' and bal[1] > share) or (side == 'sell' and bal[0] * price > share)
+      logger.info JSON.stringify {pos, total, share, ret}, null, 2
+      ret
+    .pipe map ([x, pos]) ->
+      x
+
+export order = (account, pair, entryExit, nShare) -> (obs) ->
+  obs
+    .pipe concatMap (x) ->
+      bal = [
+        pos[pair[0]] || 0
+        pos[pair[1]] || 0
+      ]
+      {side, price} = entryExit
+      total = bal[0] * price + bal[1]
+      share = total / nShare
+      params =
+        code: "#{pair[0]}#{pair[1]}"
+        side: side
+        type: 'limit'
+        price: price
+        qty: Math.floor(share * 1000 / price) / 1000
+      (from do ->
+        try
+          index = await account.placeOrder params
+          await account.enableOrder index
+        catch err
+          logger.error err
+      )
+        .pipe map ->
+          params

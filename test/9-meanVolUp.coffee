@@ -27,16 +27,14 @@ do ->
       .pipe indicator()
       .pipe meanReversion()
       .pipe map (x) ->
+        x.entryExit ?= []
         if x['close'] > x['close.mean'] + 2 * x['close.stdev']
-          x.entryExit ?= []
           x.entryExit.push {id: 'mean', side: 'sell', price: x['close']}
         else if x['close'] < x['close.mean'] - 2 * x['close.stdev']
-          x.entryExit ?= []
           x.entryExit.push {id: 'mean', side: 'buy', price: x['close']}
         x
       .pipe filter (x) ->
-        ret = _.find x.entryExit, (i) -> i.id == 'mean'
-        ret? 
+        (_.find x.entryExit, id: 'mean')?
 
     volUp = ohlc
       .pipe find.volUp() 
@@ -58,7 +56,7 @@ do ->
         share = total / nShare
         {side, price} = _.find m.entryExit, (x) -> x.id == 'mean'
         ret = (side == 'buy' and USDT > share) or (side == 'sell' and ETH * price > share)
-        logger.info "total, share, ret: #{total}, #{share}, #{ret}"
+        logger.info "pos, total, share, ret: #{JSON.stringify pos} #{total}, #{share}, #{ret}"
         ret
       .subscribe ([m, v, pos]) ->
         {ETH, USDT} = pos

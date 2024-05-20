@@ -7,6 +7,8 @@
     "meanReversion": "node -r coffeescript/register -r esm test/strategy.coffee 5",
     "interval": "node -r coffeescript/register -r esm test/interval.coffee",
     "order": "node -r coffeescript/register -r esm test/order.coffee",
+    "box": "node -r coffeescript/register -r esm test/8-boxBreakout.coffee",
+    "mean": "node -r coffeescript/register -r esm test/9-meanVolUp.coffee",
     "test": "node -r coffeescript/register -r esm test/strategy.coffee 5"
   },
   "repository": {
