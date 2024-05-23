@@ -7,7 +7,7 @@ import {readFile} from 'fs/promises'
 import {MainClient, WebsocketClient} from 'binance'
 {Broker, freqDuration} = AlgoTrader = require('algotrader/rxData').default
 {createLogger} = winston = require 'winston'
-import {concat, tap, map, from, filter, fromEvent} from 'rxjs'
+import {concatMap, concat, tap, map, from, filter, fromEvent} from 'rxjs'
 
 logger = createLogger
   level: process.env.LEVEL || 'info'
@@ -200,34 +200,36 @@ export class Binance extends Broker
 
 export default Binance
 
-export position = (account, pair, entryExit, nShare) -> (obs) ->
+export position = (account, pair, nShare) -> (obs) ->
   obs
     .pipe concatMap (x) ->
       from do -> await account.position()
         .pipe map (pos) ->
-          [x, pos]
-    .pipe filter ([x, pos]) ->
+          bal = [
+            pos[pair[0]] || 0
+            pos[pair[1]] || 0
+          ]
+          {side, price} = x.entryExit
+          total = bal[0] * price + bal[1]
+          share = total / nShare
+          _.extend x, position: (_.extend pos, {total, share})
+    .pipe filter (x) ->
+      {side, price} = x.entryExit
+      {share} = x.position
       bal = [
-        pos[pair[0]] || 0
-        pos[pair[1]] || 0
+        x.position[pair[0]] || 0
+        x.position[pair[1]] || 0
       ]
-      {side, price} = entryExit
-      total = bal[0] * price + bal[1]
-      share = total / nShare
-      ret = (side == 'buy' and bal[1] > share) or (side == 'sell' and bal[0] * price > share)
-      logger.info JSON.stringify {pos, total, share, ret}, null, 2
-      ret
-    .pipe map ([x, pos]) ->
-      x
+      (side == 'buy' and bal[1] > share) or (side == 'sell' and bal[0] * price > share)
 
-export order = (account, pair, entryExit, nShare) -> (obs) ->
+export order = (account, pair, nShare) -> (obs) ->
   obs
     .pipe concatMap (x) ->
       bal = [
-        pos[pair[0]] || 0
-        pos[pair[1]] || 0
+        x.position[pair[0]] || 0
+        x.position[pair[1]] || 0
       ]
-      {side, price} = entryExit
+      {side, price} = x.entryExit
       total = bal[0] * price + bal[1]
       share = total / nShare
       params =
@@ -243,5 +245,5 @@ export order = (account, pair, entryExit, nShare) -> (obs) ->
         catch err
           logger.error err
       )
-        .pipe map ->
-          params
+        .pipe map (o) ->
+          _.extend x, order: o
