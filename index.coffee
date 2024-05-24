@@ -8,6 +8,7 @@ import {MainClient, WebsocketClient} from 'binance'
 {Broker, freqDuration} = AlgoTrader = require('algotrader/rxData').default
 {createLogger} = winston = require 'winston'
 import {concatMap, concat, tap, map, from, filter, fromEvent} from 'rxjs'
+import {inspect} from 'util'
 
 logger = createLogger
   level: process.env.LEVEL || 'info'
@@ -110,15 +111,16 @@ export class Binance extends Broker
         api_secret: await Binance.rsa_key
       @ws
         .on 'open', ->
-          console.log "binance ws opened"
+          logger.info "binance ws opened"
         .on 'message', (msg) =>
           try
             @next msg
           catch err
-            console.log err
+            logger.error inspect err
         .on 'reconnected', ->
-          console.log 'binance ws reconnected'
-        .on 'error', console.error
+          logger.info 'binance ws reconnected'
+        .on 'error', (err) ->
+          logger.error inspect err
       @
 
   historyKL: ({code, freq, start, end} = {}) ->
@@ -243,7 +245,7 @@ export order = (account, pair, nShare) -> (obs) ->
           index = await account.placeOrder params
           await account.enableOrder index
         catch err
-          logger.error err.msg
+          logger.error inspect err
       )
         .pipe map (o) ->
           _.extend x, order: o
