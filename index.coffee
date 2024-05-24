@@ -243,7 +243,7 @@ export order = (account, pair, nShare) -> (obs) ->
           index = await account.placeOrder params
           await account.enableOrder index
         catch err
-          logger.error err
+          logger.error err.msg
       )
         .pipe map (o) ->
           _.extend x, order: o
