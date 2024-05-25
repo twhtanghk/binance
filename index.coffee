@@ -222,7 +222,9 @@ export position = (account, pair, nShare) -> (obs) ->
         x.position[pair[0]] || 0
         x.position[pair[1]] || 0
       ]
-      (side == 'buy' and bal[1] > share) or (side == 'sell' and bal[0] * price > share)
+      ret = (side == 'buy' and bal[1] > share) or (side == 'sell' and bal[0] * price > share)
+      logger.debug "#{inspect x.position} #{ret}"
+      ret
 
 export order = (account, pair, nShare) -> (obs) ->
   obs
