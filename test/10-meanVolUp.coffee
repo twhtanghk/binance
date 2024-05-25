@@ -16,14 +16,12 @@ logger = createLogger
 do ->
   try
     broker = await new Binance()
-    {test, pair, start, end, freq} = parse()
-    pair = JSON.parse pair
-    start = moment start
-    end = moment end
+    {test, ohlc, order} = parse()
+    {pair, start, end, freq} = ohlc
+    {nShare} = order
     code = "#{pair[0]}#{pair[1]}"
     account = await broker.defaultAcc()
-    nShare = 5
-    logger.info inspect {test, pair, code, start, end, freq}
+    logger.info inspect {ohlc, order}
 
     src = (params) ->
       if test 

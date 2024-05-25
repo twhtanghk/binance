@@ -1,19 +1,41 @@
+import {extend, defaults} from 'lodash'
 import moment from 'moment'
 import yargs from 'yargs'
 import {hideBin} from 'yargs/helpers'
 import {inspect} from 'util'
 
-# e.g. [--test] '["ETH", "USDT"]' 2024-04-01T00:00:00 2024-04-01T23:59:59 1d'
-parse = -> ((yargs hideBin process.argv)
-  .usage '$0 [--test] <pair> <start> [end] [freq]', 'meanVolUp', (yargs) ->
-  .option 'test',
-    alias: 't'
-    describe: 'enable backtest'
-    default: false
-  .boolean ['test']
-  .default 'end', moment().format()
-  .default 'freq', '1'
-  .parse()
-)
+ohlc =
+  pair: ['ETH', 'USDT']
+  start: moment().subtract minute: 20
+  end: moment()
+  freq: '1'
 
+order =
+  nShare: 7
+
+# e.g. [--test] '["ETH", "USDT"]' 2024-04-01T00:00:00 2024-04-01T23:59:59 1d'
+parse = -> 
+  ret = (yargs hideBin process.argv)
+    .usage '$0 [--test] [--ohlc opts] [--order opts]', '$0', (yargs) ->
+    .option 'test',
+      type: 'boolean'
+      describe: 'enable backtest'
+      default: false
+    .option 'ohlc',
+      type: 'string'
+      describe: 'ohlc opts'
+      default: JSON.stringify ohlc
+    .option 'order',
+      type: 'string'
+      describe: 'order opts'
+      default: JSON.stringify order
+    .parse()
+  ret.ohlc = defaults (JSON.parse ret.ohlc), ohlc
+  if typeof ret.ohlc.start == 'string' 
+    ret.ohlc.start = moment ret.ohlc.start
+  if typeof ret.ohlc.end == 'string'
+    ret.ohlc.end = moment ret.ohlc.end
+  ret.order = defaults (JSON.parse ret.order), order
+  ret
+  
 export default parse
