@@ -16,12 +16,12 @@ logger = createLogger
 do ->
   try
     broker = await new Binance()
-    {test, ohlc, order} = parse()
+    {test, ohlc} = opts = parse()
     {pair, start, end, freq} = ohlc
-    {nShare} = order
+    {nShare} = opts.order
     code = "#{pair[0]}#{pair[1]}"
-    account = await broker.defaultAcc()
-    logger.info inspect {ohlc, order}
+    account = if test then broker.testAcc() else await broker.defaultAcc()
+    logger.info inspect opts
 
     src = (params) ->
       if test 
@@ -47,7 +47,8 @@ do ->
 
     (combineLatest [mean, volUp])
       .pipe filter ([m, v]) ->
-        m.timestamp == v.timestamp
+        m.timestamp == v.timestamp and
+        moment().unix() - m.timestamp < 120 # less then 2 min
       .pipe map (indicator) ->
         [m, v] = indicator
         entryExit = null
@@ -59,9 +60,9 @@ do ->
       .pipe filter (x) ->
         x.entryExit?
       .pipe position account, pair, nShare
-#      .pipe order account, pair, nShare
+      .pipe order account, pair, nShare
       .subscribe (x) ->
-        logger.info inspect _.pick x, ['entryExit', 'position']
+        logger.info inspect x
 
       ohlc.subscribe criteria
   catch err

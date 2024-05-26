@@ -71,9 +71,8 @@ class Account extends AlgoTrader.Account
         status = X
         createTime = O / 1000
         {code, side, id, type, timeInForce, qty, price, status, createTime}
-  enableOrder: (index) ->
-    super index
-    {code, side, type, timeInForce, qty, price} = @orderList[index]
+  placeOrder: (order) ->
+    {code, side, type, timeInForce, qty, price} = order
     side = Order.SIDE[side]
     type = Order.TYPE[type] 
     timeInForce ?= 'GTC'
@@ -81,7 +80,7 @@ class Account extends AlgoTrader.Account
     quantity = parseFloat qty.toFixed 8
     price = parseFloat price.toFixed 8
     {orderId, status} = await @broker.client.submitNewOrder {symbol: code, side, type, timeInForce, quantity, price, timestamp}
-    _.extend @orderList[index], {status, id: orderId}
+    _.extend order, {status, id: orderId}
   cancelOrder: ({id}) ->
     {code, id} = _.find @orderList, {id}
     await @broker.client.cancelOrder {symbol: code, orderId: id}
@@ -244,8 +243,7 @@ export order = (account, pair, nShare) -> (obs) ->
         qty: Math.floor(share * 1000 / price) / 1000
       (from do ->
         try
-          index = await account.placeOrder params
-          await account.enableOrder index
+          o = await account.placeOrder params
         catch err
           logger.error inspect err
       )
