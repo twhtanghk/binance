@@ -47,8 +47,7 @@ do ->
 
     (combineLatest [mean, volUp])
       .pipe filter ([m, v]) ->
-        m.timestamp == v.timestamp and
-        moment().unix() - m.timestamp < 120 # less then 2 min
+        m.timestamp == v.timestamp
       .pipe map (indicator) ->
         [m, v] = indicator
         entryExit = null
