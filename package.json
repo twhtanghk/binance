@@ -8,7 +8,7 @@
     "interval": "node -r coffeescript/register -r esm test/interval.coffee",
     "order": "node -r coffeescript/register -r esm test/order.coffee",
     "box": "node -r coffeescript/register -r esm test/8-boxBreakout.coffee",
-    "mean": "node -r coffeescript/register -r esm test/9-meanVolUp.coffee",
+    "mean": "node -r coffeescript/register -r esm test/9-meanVolUp.coffee --ohlc '{\"start\": \"2024-05-26\", \"freq\": \"1\"}' --order '{\"nShare\": 11}'",
     "test": "node -r coffeescript/register -r esm test/strategy.coffee 5"
   },
   "repository": {
