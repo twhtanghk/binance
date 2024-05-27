@@ -43,7 +43,7 @@ parse = ->
   if typeof ret.ohlc.end == 'string'
     ret.ohlc.end = moment ret.ohlc.end
   # force end time to be now for backtest
-  if ret.test
+  if ret.test and ret.ohlc.end == null
     ret.ohlc.end = moment()
   ret.order = defaults (JSON.parse ret.order), order
   ret
