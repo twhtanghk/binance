@@ -87,8 +87,7 @@ class Account extends AlgoTrader.Account
 
 export class Binance extends Broker
   @api_key: process.env.BINANCE_API_KEY
-  @rsa_key: do ->
-    (await readFile process.env.BINANCE_RSA_KEY).toString()
+  @rsa_key: process.env.BINANCE_RSA_KEY
   @freqMap: (interval) ->
     bmap =
       '1': '1m'
@@ -101,26 +100,24 @@ export class Binance extends Broker
 
   constructor: ->
     super()
-    return do =>
-      @client = new MainClient
-        api_key: Binance.api_key
-        api_secret: await Binance.rsa_key
-      @ws = new WebsocketClient
-        api_key: Binance.api_key
-        api_secret: await Binance.rsa_key
-      @ws
-        .on 'open', ->
-          logger.info "binance ws opened"
-        .on 'message', (msg) =>
-          try
-            @next msg
-          catch err
-            logger.error inspect err
-        .on 'reconnected', ->
-          logger.info 'binance ws reconnected'
-        .on 'error', (err) ->
+    @client = new MainClient
+      api_key: Binance.api_key
+      api_secret: Binance.rsa_key
+    @ws = new WebsocketClient
+      api_key: Binance.api_key
+      api_secret: Binance.rsa_key
+    @ws
+      .on 'open', ->
+        logger.info "binance ws opened"
+      .on 'message', (msg) =>
+        try
+          @next msg
+        catch err
           logger.error inspect err
-      @
+      .on 'reconnected', ->
+        logger.info 'binance ws reconnected'
+      .on 'error', (err) ->
+        logger.error inspect err
 
   historyKL: ({code, freq, start, end} = {}) ->
     code ?= 'BTCUSDT'

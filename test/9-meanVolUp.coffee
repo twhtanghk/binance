@@ -15,7 +15,7 @@ logger = createLogger
 
 do ->
   try
-    broker = await new Binance()
+    broker = new Binance()
     {test, ohlc} = opts = parse()
     {pair, start, end, freq} = ohlc
     {nShare} = opts.order
