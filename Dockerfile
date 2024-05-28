@@ -1,4 +1,4 @@
-FROM node
+FROM node:21.7.2
 
 ENV APP=/usr/src/app
 ADD . $APP
