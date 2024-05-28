@@ -3,15 +3,10 @@ moment = require 'moment'
 {find, indicator, meanReversion} = require('algotrader/rxStrategy').default 
 {skipDup} = require('algotrader/analysis').default.ohlc
 import Binance, {position, order} from '../index.js'
-{createLogger, format, transports} = require 'winston'
-import {Subject, from, combineLatest, bufferCount, map, filter, tap} from 'rxjs'
+logger = require('./logger').default
 parse = require('./args').default
+import {Subject, from, combineLatest, bufferCount, map, filter, tap} from 'rxjs'
 import {inspect} from 'util'
-
-logger = createLogger
-  level: process.env.LEVEL || 'info'
-  format: format.simple()
-  transports: [ new transports.Console() ]
 
 do ->
   try
@@ -29,11 +24,6 @@ do ->
       else
         await broker.dataKL params
     
-    ohlc = (await src {code, start, end, freq})
-      .pipe skipDup 'timestamp'
-      .pipe map (x) ->
-        _.extend x, date: moment.unix x.timestamp
-
     criteria = new Subject()
 
     volUp = criteria
@@ -63,6 +53,10 @@ do ->
       .subscribe (x) ->
         logger.info inspect x
 
-      ohlc.subscribe criteria
+    (await src {code, start, end, freq})
+      .pipe skipDup 'timestamp'
+      .pipe map (x) ->
+        _.extend x, date: moment.unix x.timestamp
+      .subscribe criteria
   catch err
     logger.error err
