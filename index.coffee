@@ -6,14 +6,9 @@ import {EventEmitter} from 'events'
 import {readFile} from 'fs/promises'
 import {MainClient, WebsocketClient} from 'binance'
 {Broker, freqDuration} = AlgoTrader = require('algotrader/rxData').default
-{createLogger} = winston = require 'winston'
+logger = require('./logger').default
 import {concatMap, concat, tap, map, from, filter, fromEvent} from 'rxjs'
 import {inspect} from 'util'
-
-logger = createLogger
-  level: process.env.LEVEL || 'info'
-  format: winston.format.simple()
-  transports: [ new winston.transports.Console() ]
 
 class Order extends AlgoTrader.Order
   @SIDE:

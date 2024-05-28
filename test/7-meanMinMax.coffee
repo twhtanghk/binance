@@ -3,7 +3,7 @@ moment = require 'moment'
 strategy = require('algotrader/rxStrategy').default
 {skipDup} = require('algotrader/analysis').default.ohlc
 import Binance, {position, order} from '../index.js'
-logger = require('./logger').default
+logger = require('../logger').default
 parse = require('./args').default
 import {from, concatMap, fromEvent, tap, map, filter} from 'rxjs'
 import {inspect} from 'util'
