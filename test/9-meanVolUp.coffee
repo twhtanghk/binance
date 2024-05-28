@@ -15,7 +15,10 @@ do ->
     {pair, start, end, freq} = ohlc
     {nShare} = opts.order
     code = "#{pair[0]}#{pair[1]}"
-    account = if test then broker.testAcc() else await broker.defaultAcc()
+    bal = {}
+    bal[pair[0]] = 0
+    bal[pair[1]] = 1000
+    account = if test then broker.testAcc(bal) else await broker.defaultAcc()
     logger.info inspect opts
 
     src = (params) ->
