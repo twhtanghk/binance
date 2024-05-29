@@ -8,7 +8,6 @@ import {MainClient, WebsocketClient} from 'binance'
 {Broker, freqDuration} = AlgoTrader = require('algotrader/rxData').default
 logger = require('./logger').default
 import {concatMap, concat, tap, map, from, filter, fromEvent} from 'rxjs'
-import {inspect} from 'util'
 
 class Order extends AlgoTrader.Order
   @SIDE:
@@ -108,11 +107,11 @@ export class Binance extends Broker
         try
           @next msg
         catch err
-          logger.error inspect err
+          logger.error err
       .on 'reconnected', ->
         logger.info 'binance ws reconnected'
       .on 'error', (err) ->
-        logger.error inspect err
+        logger.error err
 
   historyKL: ({code, freq, start, end} = {}) ->
     code ?= 'BTCUSDT'
@@ -206,7 +205,7 @@ export position = (account, pair, nShare) -> (obs) ->
           total = bal[0] * price + bal[1]
           share = total / nShare
           _.extend x, position: (_.extend pos, {total, share})
-    .pipe filter (x) ->
+    .pipe map (x) ->
       {side, price} = x.entryExit
       {share} = x.position
       bal = [
@@ -214,8 +213,13 @@ export position = (account, pair, nShare) -> (obs) ->
         x.position[pair[1]] || 0
       ]
       ret = (side == 'buy' and bal[1] > share) or (side == 'sell' and bal[0] * price > share)
-      logger.debug "#{inspect x.position} #{ret}"
-      ret
+      _.extend x.position, fundAvailable: ret
+      x
+    .pipe tap (x) ->
+      if not x.position.fundAvailable
+        logger.debug _.pick x, 'entryExit', 'position'
+    .pipe filter (x) ->
+      x.position.fundAvailable
 
 export order = (account, pair, nShare) -> (obs) ->
   obs
@@ -237,7 +241,7 @@ export order = (account, pair, nShare) -> (obs) ->
         try
           o = await account.placeOrder params
         catch err
-          logger.error inspect err
+          logger.error err
       )
         .pipe map (o) ->
           _.extend x, order: o

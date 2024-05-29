@@ -6,7 +6,6 @@ import Binance, {position, order} from '../index.js'
 logger = require('../logger').default
 parse = require('./args').default
 import {from, concatMap, fromEvent, tap, map, filter} from 'rxjs'
-import {inspect} from 'util'
 
 do ->
   try 
@@ -16,8 +15,11 @@ do ->
     {pair, start, end, freq} = ohlc
     {nShare} = opts.order
     code = pair[0] + pair[1]
-    account = if test then broker.testAcc() else await broker.defaultAcc()
-    logger.info inspect opts
+    balance = {}
+    balance[pair[0]] = 0
+    balance[pair[1]] = 1000
+    account = if test then broker.testAcc({balance}) else await broker.defaultAcc()
+    logger.info opts
     
     src = (params) ->
       if test
@@ -45,6 +47,6 @@ do ->
       .pipe position account, pair, nShare
       .pipe order account, pair, nShare
       .subscribe (x) ->
-        logger.info inspect x
+        logger.info x
   catch err
     logger.error err

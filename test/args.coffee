@@ -3,7 +3,6 @@ import {extend, defaults} from 'lodash'
 import moment from 'moment'
 import yargs from 'yargs'
 import {hideBin} from 'yargs/helpers'
-import {inspect} from 'util'
 
 ohlc =
   pair: ['ETH', 'USDT']

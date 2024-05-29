@@ -6,28 +6,26 @@ import Binance, {position, order} from '../index.js'
 logger = require('../logger').default
 parse = require('./args').default
 import {Subject, combineLatest, bufferCount, map, filter, tap} from 'rxjs'
-import {inspect} from 'util'
 
 do ->
   try
+    criteria = new Subject()
     broker = await new Binance()
     {test, ohlc} = opts = parse()
     {pair, start, end, freq} = ohlc
     {nShare} = opts.order
     code = pair[0] + pair[1]
-    bal = {}
-    bal[pair[0]] = 0
-    bal[pair[1]] = 1000
-    account = if test then broker.testAcc(bal) else await broker.defaultAcc()
-    logger.info inspect opts
+    balance = {}
+    balance[pair[0]] = 0
+    balance[pair[1]] = 1000
+    account = if test then broker.testAcc({balance, ohlc: criteria}) else await broker.defaultAcc()
+    logger.info opts
 
     src = (params) ->
       if test
         await broker.historyKL params
       else
         await broker.dataKL params
-
-    criteria = new Subject()
 
     box = criteria
       .pipe find.box() 
@@ -55,7 +53,7 @@ do ->
       .pipe position account, pair, nShare
       .pipe order account, pair, nShare
       .subscribe (x) ->
-        logger.info inspect x
+        logger.info x
 
     (await src {code, start, end, freq})
       .pipe skipDup 'timestamp'
