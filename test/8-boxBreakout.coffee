@@ -44,7 +44,7 @@ do ->
         b.timestamp <= v.timestamp and v.timestamp - b.timestamp <= 120 # 2 min
       .pipe map (indicator) ->
         [b, v] = indicator
-        entryExit = []
+        entryExit = null
         if v.close < b.box[0]
           entryExit = {id: 'boxBreakout', side: 'sell', price: v.close}
         else if v.close > b.box[1]
