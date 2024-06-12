@@ -232,16 +232,18 @@ export order = (account, pair, nShare) -> (obs) ->
       total = bal[0] * price + bal[1]
       share = total / nShare
       params =
-        code: "#{pair[0]}#{pair[1]}"
+        code: pair[0] + pair[1]
+        pair: pair
         side: side
         type: 'limit'
         price: price
         qty: Math.floor(share * 1000 / price) / 1000
       (from do ->
         try
-          o = await account.placeOrder params
+          return await account.placeOrder params
         catch err
           logger.error err
+          return null
       )
         .pipe map (o) ->
           _.extend x, order: o

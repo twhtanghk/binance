@@ -43,9 +43,9 @@ do ->
       .pipe map (indicator) ->
         [m, v] = indicator
         entryExit = null
-        if m['high'] > m['close.mean'] + 2 * m['close.stdev']
+        if m['close'] > m['close.mean'] + 2 * m['close.stdev']
           entryExit = {id: 'mean', side: 'sell', price: m['close']}
-        else if m['low'] < m['close.mean'] - 2 * m['close.stdev']
+        else if m['close'] < m['close.mean'] - 2 * m['close.stdev']
           entryExit = {id: 'mean', side: 'buy', price: m['close']}
         {indicator, entryExit}
       .pipe filter (x) ->
