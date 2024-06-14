@@ -78,6 +78,8 @@ class Account extends AlgoTrader.Account
   cancelOrder: ({id}) ->
     {code, id} = _.find @orderList, {id}
     await @broker.client.cancelOrder {symbol: code, orderId: id}
+  openOrders: ->
+    await @broker.client.getOpenOrders()
 
 export class Binance extends Broker
   @api_key: process.env.BINANCE_API_KEY
