@@ -7,7 +7,7 @@ import {readFile} from 'fs/promises'
 import {MainClient, WebsocketClient} from 'binance'
 {Broker, freqDuration} = AlgoTrader = require('algotrader/rxData').default
 logger = require('./logger').default
-import {concatMap, concat, tap, map, from, filter, fromEvent} from 'rxjs'
+import {Observable, concatMap, concat, tap, map, from, filter, fromEvent} from 'rxjs'
 
 class Order extends AlgoTrader.Order
   @SIDE:
@@ -149,22 +149,29 @@ export class Binance extends Broker
   streamKL: ({code, freq} = {}) ->
     code ?= 'BTCUSDT'
     freq ?= '1'
-    conn = @ws.subscribeSpotKline code, Binance.freqMap freq
-    fromEvent conn, 'message'
-      .pipe map ({data}) ->
-        JSON.parse data
-      .pipe filter ({e, E, s, k}) ->
-        s == code and k.i == Binance.freqMap(freq)
-      .pipe map ({e, E, s, k}) ->
-        market: 'crypto'
-        code: code
-        freq: freq
-        timestamp: k.t / 1000
-        high: parseFloat k.h
-        low: parseFloat k.l
-        open: parseFloat k.o
-        close: parseFloat k.c
-        volume: parseFloat k.v
+    src = =>
+      conn = @ws.subscribeSpotKline code, Binance.freqMap freq
+      fromEvent conn, 'message'
+        .pipe map ({data}) ->
+          JSON.parse data
+        .pipe filter ({e, E, s, k}) ->
+          s == code and k.i == Binance.freqMap(freq)
+        .pipe map ({e, E, s, k}) ->
+          market: 'crypto'
+          code: code
+          freq: freq
+          timestamp: k.t / 1000
+          high: parseFloat k.h
+          low: parseFloat k.l
+          open: parseFloat k.o
+          close: parseFloat k.c
+          volume: parseFloat k.v
+    new Observable (obs) =>
+      src()
+        .subscribe obs
+      @ws.on 'reconnected', ->
+        src()
+          .subscribe obs
 
   unsubKL: ({code, freq}) ->
     key = "spot_kline_#{code.toLowerCase()}_#{freq}"
